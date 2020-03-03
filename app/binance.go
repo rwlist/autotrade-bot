@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 func binanceUrl() string {
@@ -32,4 +33,8 @@ func binanceAnswerParse(resp *http.Response) (string, error) {
 		return errorValue, err
 	}
 	return dec.Rate, nil
+}
+
+func isEmptyBalance(str string) bool {
+	return strings.Trim(str, ".0") == ""
 }

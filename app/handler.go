@@ -2,23 +2,24 @@ package app
 
 import (
 	"fmt"
-	"github.com/petuhovskiy/telegram"
 	"strings"
+
+	"github.com/petuhovskiy/telegram"
 
 	"github.com/petuhovskiy/autotrade-bot/conf"
 )
 
 type Handler struct {
-	bot *telegram.Bot
+	bot   *telegram.Bot
 	logic *Logic
-	cfg *conf.Struct
+	cfg   *conf.Struct
 }
 
 func NewHandler(bot *telegram.Bot, logic *Logic, cfg *conf.Struct) *Handler {
 	return &Handler{
-		bot: bot,
+		bot:   bot,
 		logic: logic,
-		cfg: cfg,
+		cfg:   cfg,
 	}
 }
 
@@ -37,8 +38,8 @@ func (h *Handler) Handle(upd telegram.Update) {
 
 func (h *Handler) sendMessage(chatID int, text string) {
 	_, _ = h.bot.SendMessage(&telegram.SendMessageRequest{
-		ChatID:                str(chatID),
-		Text:                  text,
+		ChatID: str(chatID),
+		Text:   text,
 	})
 }
 
