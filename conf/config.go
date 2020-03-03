@@ -7,6 +7,8 @@ import (
 type Struct struct {
 	AdminID int `env:"ADMIN_TELEGRAM_ID"`
 	BotToken string `env:"BOT_TOKEN"`
+	BinanceApiKey string `env:"API-KEY"`
+	BinanceSecret string `env:"SECRET"`
 }
 
 func ParseEnv() (*Struct, error) {
@@ -15,6 +17,5 @@ func ParseEnv() (*Struct, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &cfg, nil
 }

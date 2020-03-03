@@ -2,12 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/eranyanay/binance-api"
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
 	"log"
 
-	"github.com/rwlist/ovpn-bot/app"
-	"github.com/rwlist/ovpn-bot/conf"
+	"github.com/petuhovskiy/autotrade-bot/app"
+	"github.com/petuhovskiy/autotrade-bot/conf"
 )
 
 func main() {
@@ -38,7 +39,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	l := app.NewLogic()
+	c := binance.NewBinanceClient(cfg.BinanceApiKey, cfg.BinanceSecret)
+	l := app.NewLogic(c)
 	h := app.NewHandler(bot, l, cfg)
 
 	for upd := range ch {

@@ -1,5 +1,7 @@
 package app
 
+import "github.com/eranyanay/binance-api"
+
 const (
 	prefix = "ovpn_"
 
@@ -8,13 +10,27 @@ const (
 	udp = "udp"
 )
 
-type Logic struct {}
-
-func NewLogic() *Logic {
-	return &Logic{}
+type Logic struct {
+	client *binance.BinanceClient
 }
 
-func (l *Logic) CommandStatus() (string, error) {
+func NewLogic(client *binance.BinanceClient) *Logic {
+	return &Logic{
+		client: client,
+	}
+}
+
+type Status struct {
+	rate string
+	balances []*binance.Balance
+}
+
+func (l *Logic) CommandStatus() (*Status, error) {
 	rate, err := binanceRateQuery()
-	return rate, err
+	balances, err := binanceAccountBalance(l.client)
+	res := &Status {
+		rate: rate,
+		balances: balances,
+	}
+	return res, err
 }

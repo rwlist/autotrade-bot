@@ -5,7 +5,7 @@ import (
 	"github.com/petuhovskiy/telegram"
 	"strings"
 
-	"github.com/rwlist/ovpn-bot/conf"
+	"github.com/petuhovskiy/autotrade-bot/conf"
 )
 
 type Handler struct {
@@ -68,13 +68,19 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 }
 
 func (h *Handler) commandStatus(chatID int) {
-	rate, err := h.logic.CommandStatus()
+	status, err := h.logic.CommandStatus()
 	if err != nil {
 		text := fmt.Sprintf("Error while status:\n\n%s", err)
 		h.sendMessage(chatID, text)
 		return
 	}
-	res := fmt.Sprintf("BTC: 1 ≈ %v USDT", rate)
+	res := fmt.Sprintf("BTC: 1 ≈ %v USDT\n\nWallet balance:", status.rate)
+	if len(status.balances) == 0 {
+		res += "\nNo money :^)"
+	}
+	for _, v := range status.balances {
+		res += fmt.Sprintf("\n%v:\nFree: %v\nLocked: %v\n", v.Asset, v.Free, v.Locked)
+	}
 	h.sendMessage(chatID, res)
 }
 
