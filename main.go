@@ -17,7 +17,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	bot := telegram.NewBotWithOpts(cfg.BotToken, &telegram.Opts{
+	bot := telegram.NewBotWithOpts(cfg.Bot.Token, &telegram.Opts{
 		Middleware: func(handler telegram.RequestHandler) telegram.RequestHandler {
 			return func(methodName string, req interface{}) (message json.RawMessage, err error) {
 				res, err := handler(methodName, req)
@@ -39,7 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	c := binance.NewBinanceClient(cfg.BinanceApiKey, cfg.BinanceSecret)
+	c := binance.NewBinanceClient(cfg.Binance.APIKey, cfg.Binance.Secret)
 	l := app.NewLogic(c)
 	h := app.NewHandler(bot, l, cfg)
 

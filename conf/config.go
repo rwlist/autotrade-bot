@@ -5,10 +5,8 @@ import (
 )
 
 type Struct struct {
-	AdminID int `env:"ADMIN_TELEGRAM_ID"`
-	BotToken string `env:"BOT_TOKEN"`
-	BinanceApiKey string `env:"API-KEY"`
-	BinanceSecret string `env:"SECRET"`
+	Bot     Bot
+	Binance Binance
 }
 
 func ParseEnv() (*Struct, error) {

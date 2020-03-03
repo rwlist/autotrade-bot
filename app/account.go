@@ -1,7 +1,7 @@
 package app
 
 import (
-	binance "github.com/eranyanay/binance-api"
+	"github.com/eranyanay/binance-api"
 )
 
 func binanceAccountBalance(client *binance.BinanceClient) ([]*binance.Balance, error) {

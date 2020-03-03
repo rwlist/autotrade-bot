@@ -28,7 +28,7 @@ func (h *Handler) Handle(upd telegram.Update) {
 	}
 
 	msg := upd.Message
-	if msg.From.ID != h.cfg.AdminID {
+	if msg.From.ID != h.cfg.Bot.AdminID {
 		return
 	}
 

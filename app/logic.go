@@ -2,14 +2,6 @@ package app
 
 import "github.com/eranyanay/binance-api"
 
-const (
-	prefix = "ovpn_"
-
-	data = "data"
-	tcp = "tcp"
-	udp = "udp"
-)
-
 type Logic struct {
 	client *binance.BinanceClient
 }
