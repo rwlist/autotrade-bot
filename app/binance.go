@@ -6,10 +6,6 @@ import (
 	"strings"
 )
 
-const (
-	errorValue = ""
-)
-
 func balanceToUSD(client *binance.Client, bal *binance.Balance) (float64, error) {
 	haveFree := strToFloat64(bal.Free)
 	haveLocked := strToFloat64(bal.Locked)
