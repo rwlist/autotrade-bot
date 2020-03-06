@@ -11,8 +11,8 @@ const (
 )
 
 func balanceToUSD(client *binance.Client, bal *binance.Balance) (float64, error) {
-	haveFree := strToF(bal.Free)
-	haveLocked := strToF(bal.Locked)
+	haveFree := strToFloat64(bal.Free)
+	haveLocked := strToFloat64(bal.Locked)
 	if bal.Asset == "USDT" {
 		return haveFree + haveLocked, nil
 	}
@@ -21,7 +21,7 @@ func balanceToUSD(client *binance.Client, bal *binance.Balance) (float64, error)
 	if err != nil {
 		return 0, err
 	}
-	price := strToF(symbolPrice[0].Price)
+	price := strToFloat64(symbolPrice[0].Price)
 	haveFree *= price
 	haveLocked *= price
 	return haveFree + haveLocked, nil

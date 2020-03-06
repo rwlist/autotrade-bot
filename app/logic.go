@@ -47,7 +47,7 @@ func (l *Logic) CommandStatus() (*Status, error) {
 	}
 
 	res := &Status{
-		total:	  fToStr(total),
+		total:	  float64ToStr(total),
 		rate:     rate,
 		balances: balances,
 	}

@@ -9,11 +9,11 @@ func str(id int) string {
 	return strconv.Itoa(id)
 }
 
-func fToStr(f float64) string {
+func float64ToStr(f float64) string {
 	return fmt.Sprintf("%v", f)
 }
 
-func strToF(str string) float64 {
+func strToFloat64(str string) float64 {
 	f, _ := strconv.ParseFloat(str, 64)
 	return f
 }
