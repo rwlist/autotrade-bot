@@ -1,38 +1,38 @@
 package app
 
 import (
-	"encoding/json"
-	"net/http"
+	"context"
+	"github.com/adshao/go-binance"
 	"strings"
 )
-
-func binanceUrl() string {
-	return "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
-}
 
 const (
 	errorValue = ""
 )
 
-func binanceRateQuery() (string, error) {
-	resp, err := http.Get(binanceUrl())
-	defer resp.Body.Close()
-	if err != nil {
-		return errorValue, err
+func balanceToUSD(client *binance.Client, bal *binance.Balance) (float64, error) {
+	haveFree := strToF(bal.Free)
+	haveLocked := strToF(bal.Locked)
+	if bal.Asset == "USDT" {
+		return haveFree + haveLocked, nil
 	}
-	return binanceAnswerParse(resp)
+
+	symbolPrice, err := client.NewListPricesService().Symbol(bal.Asset + "USDT").Do(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	price := strToF(symbolPrice[0].Price)
+	haveFree *= price
+	haveLocked *= price
+	return haveFree + haveLocked, nil
 }
 
-func binanceAnswerParse(resp *http.Response) (string, error) {
-	type Ticker struct {
-		Rate string `json:"price"`
-	}
-	var dec Ticker
-	err := json.NewDecoder(resp.Body).Decode(&dec)
+func binanceRateQuery(client *binance.Client) (string, error) {
+	symbolPrice, err := client.NewListPricesService().Symbol("BTCUSDT").Do(context.Background())
 	if err != nil {
-		return errorValue, err
+		return "", err
 	}
-	return dec.Rate, nil
+	return symbolPrice[0].Price, nil
 }
 
 func isEmptyBalance(str string) bool {

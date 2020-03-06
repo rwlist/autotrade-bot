@@ -1,11 +1,12 @@
 package app
 
 import (
-	"github.com/eranyanay/binance-api"
+	"context"
+	"github.com/adshao/go-binance"
 )
 
-func binanceAccountBalance(client *binance.BinanceClient) ([]*binance.Balance, error) {
-	info, err := client.Account()
+func binanceAccountBalance(client *binance.Client) ([]binance.Balance, error) {
+	info, err := client.NewGetAccountService().Do(context.Background())
 	if err != nil {
 		return nil, err
 	}

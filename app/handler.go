@@ -75,7 +75,7 @@ func (h *Handler) commandStatus(chatID int) {
 		h.sendMessage(chatID, text)
 		return
 	}
-	res := fmt.Sprintf("BTC: 1 ≈ %v USDT\n\nWallet balance:", status.rate)
+	res := fmt.Sprintf("BTC: 1 ≈ %v USDT \nTotal balance ≈ %v $ \n\nWallet balance:", status.rate, status.total)
 	if len(status.balances) == 0 {
 		res += "\nNo money :^)"
 	}
