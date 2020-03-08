@@ -1,26 +1,34 @@
 package app
 
 import (
-	"github.com/eranyanay/binance-api"
+	"github.com/adshao/go-binance"
 )
 
 type Logic struct {
-	client *binance.BinanceClient
+	client *binance.Client
 }
 
-func NewLogic(client *binance.BinanceClient) *Logic {
+func NewLogic(client *binance.Client) *Logic {
 	return &Logic{
 		client: client,
 	}
 }
 
+type Balance struct {
+	usd    string
+	asset  string
+	free   string
+	locked string
+}
+
 type Status struct {
+	total	 string
 	rate     string
-	balances []*binance.Balance
+	balances []*Balance
 }
 
 func (l *Logic) CommandStatus() (*Status, error) {
-	rate, err := binanceRateQuery()
+	rate, err := binanceRateQuery(l.client)
 	if err != nil {
 		return nil, err
 	}
@@ -29,16 +37,29 @@ func (l *Logic) CommandStatus() (*Status, error) {
 		return nil, err
 	}
 
-	var balances []*binance.Balance
+	var balances []*Balance
+	var total float64
 	for _, bal := range allBalances {
 		if isEmptyBalance(bal.Free) && isEmptyBalance(bal.Locked) {
 			continue
 		}
 
-		balances = append(balances, bal)
+		balUSD, err := balanceToUSD(l.client, &bal)
+		if err != nil {
+			return &Status{}, err
+		}
+		total += balUSD
+		resBal := &Balance{
+			   usd:    float64ToStr(balUSD),
+			   asset:  bal.Asset,
+			   free:   bal.Free,
+			   locked: bal.Locked,
+		}
+		balances = append(balances, resBal)
 	}
 
 	res := &Status{
+		total:	  float64ToStr(total),
 		rate:     rate,
 		balances: balances,
 	}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/eranyanay/binance-api"
+	"github.com/adshao/go-binance"
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
 	"log"
@@ -39,7 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	c := binance.NewBinanceClient(cfg.Binance.APIKey, cfg.Binance.Secret)
+	c := binance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret)
 	l := app.NewLogic(c)
 	h := app.NewHandler(bot, l, cfg)
 
