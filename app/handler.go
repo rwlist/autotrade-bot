@@ -75,12 +75,12 @@ func (h *Handler) commandStatus(chatID int) {
 		h.sendMessage(chatID, text)
 		return
 	}
-	res := fmt.Sprintf("BTC: 1 ≈ %v USDT \nTotal balance ≈ %v $ \n\nWallet balance:", status.rate, status.total)
+	res := fmt.Sprintf("BTC: 1 ≈ %v USDT \nTotal in USD ≈ %v $ \n\nWallet balance:", status.rate, status.total)
 	if len(status.balances) == 0 {
 		res += "\nNo money :^)"
 	}
 	for _, v := range status.balances {
-		res += fmt.Sprintf("\n%v:\nFree: %v\nLocked: %v\n", v.Asset, v.Free, v.Locked)
+		res += fmt.Sprintf("\n%v:\nIn USD: %v$\nFree: %v\nLocked: %v\n", v.asset, v.usd, v.free, v.locked)
 	}
 	h.sendMessage(chatID, res)
 }

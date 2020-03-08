@@ -14,10 +14,17 @@ func NewLogic(client *binance.Client) *Logic {
 	}
 }
 
+type Balance struct {
+	usd    string
+	asset  string
+	free   string
+	locked string
+}
+
 type Status struct {
 	total	 string
 	rate     string
-	balances []binance.Balance
+	balances []*Balance
 }
 
 func (l *Logic) CommandStatus() (*Status, error) {
@@ -30,7 +37,7 @@ func (l *Logic) CommandStatus() (*Status, error) {
 		return nil, err
 	}
 
-	var balances []binance.Balance
+	var balances []*Balance
 	var total float64
 	for _, bal := range allBalances {
 		if isEmptyBalance(bal.Free) && isEmptyBalance(bal.Locked) {
@@ -42,8 +49,13 @@ func (l *Logic) CommandStatus() (*Status, error) {
 			return &Status{}, err
 		}
 		total += balUSD
-
-		balances = append(balances, bal)
+		resBal := &Balance{
+			   usd:    float64ToStr(balUSD),
+			   asset:  bal.Asset,
+			   free:   bal.Free,
+			   locked: bal.Locked,
+		}
+		balances = append(balances, resBal)
 	}
 
 	res := &Status{

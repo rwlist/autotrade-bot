@@ -10,7 +10,7 @@ func str(id int) string {
 }
 
 func float64ToStr(f float64) string {
-	return fmt.Sprintf("%v", f)
+	return fmt.Sprintf("%.2f", f)
 }
 
 func strToFloat64(str string) float64 {
