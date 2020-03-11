@@ -6,7 +6,7 @@ import (
 
 	"github.com/petuhovskiy/telegram"
 
-	"github.com/petuhovskiy/autotrade-bot/conf"
+	"github.com/rwlist/autotrade-bot/conf"
 )
 
 type Handler struct {

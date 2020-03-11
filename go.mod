@@ -1,4 +1,4 @@
-module github.com/petuhovskiy/autotrade-bot
+module github.com/rwlist/autotrade-bot
 
 go 1.13
 
