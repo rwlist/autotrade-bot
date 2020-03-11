@@ -6,14 +6,30 @@ import (
 	"strings"
 )
 
-func balanceToUSD(client *binance.Client, bal *binance.Balance) (float64, error) {
+type MyBinance struct {
+	client *binance.Client
+}
+
+func NewMyBinance(c *binance.Client) *MyBinance {
+	return &MyBinance{client : c}
+}
+
+func (b *MyBinance)AccountBalance() ([]binance.Balance, error) {
+	info, err := b.client.NewGetAccountService().Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return info.Balances, err
+}
+
+func (b *MyBinance)BalanceToUSD(bal *binance.Balance) (float64, error) {
 	haveFree := strToFloat64(bal.Free)
 	haveLocked := strToFloat64(bal.Locked)
 	if bal.Asset == "USDT" {
 		return haveFree + haveLocked, nil
 	}
 
-	symbolPrice, err := client.NewListPricesService().Symbol(bal.Asset + "USDT").Do(context.Background())
+	symbolPrice, err := b.client.NewListPricesService().Symbol(bal.Asset + "USDT").Do(context.Background())
 	if err != nil {
 		return 0, err
 	}
@@ -23,8 +39,8 @@ func balanceToUSD(client *binance.Client, bal *binance.Balance) (float64, error)
 	return haveFree + haveLocked, nil
 }
 
-func binanceRateQuery(client *binance.Client) (string, error) {
-	symbolPrice, err := client.NewListPricesService().Symbol("BTCUSDT").Do(context.Background())
+func (b *MyBinance)GetRate() (string, error) {
+	symbolPrice, err := b.client.NewListPricesService().Symbol("BTCUSDT").Do(context.Background())
 	if err != nil {
 		return "", err
 	}

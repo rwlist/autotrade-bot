@@ -1,16 +1,12 @@
 package app
 
-import (
-	"github.com/adshao/go-binance"
-)
-
 type Logic struct {
-	client *binance.Client
+	b *MyBinance
 }
 
-func NewLogic(client *binance.Client) *Logic {
+func NewLogic(b *MyBinance) *Logic {
 	return &Logic{
-		client: client,
+		b: b,
 	}
 }
 
@@ -28,11 +24,11 @@ type Status struct {
 }
 
 func (l *Logic) CommandStatus() (*Status, error) {
-	rate, err := binanceRateQuery(l.client)
+	rate, err := l.b.GetRate()
 	if err != nil {
 		return nil, err
 	}
-	allBalances, err := binanceAccountBalance(l.client)
+	allBalances, err := l.b.AccountBalance()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +40,7 @@ func (l *Logic) CommandStatus() (*Status, error) {
 			continue
 		}
 
-		balUSD, err := balanceToUSD(l.client, &bal)
+		balUSD, err := l.b.BalanceToUSD(&bal)
 		if err != nil {
 			return &Status{}, err
 		}

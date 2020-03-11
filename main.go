@@ -40,7 +40,7 @@ func main() {
 	}
 
 	c := binance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret)
-	l := app.NewLogic(c)
+	l := app.NewLogic(app.NewMyBinance(c))
 	h := app.NewHandler(bot, l, cfg)
 
 	for upd := range ch {
