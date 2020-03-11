@@ -7,8 +7,8 @@ import (
 	"github.com/petuhovskiy/telegram/updates"
 	"log"
 
-	"github.com/petuhovskiy/autotrade-bot/app"
-	"github.com/petuhovskiy/autotrade-bot/conf"
+	"github.com/rwlist/autotrade-bot/app"
+	"github.com/rwlist/autotrade-bot/conf"
 )
 
 func main() {
