@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/adshao/go-binance"
 	"strings"
 
 	"github.com/petuhovskiy/telegram"
@@ -60,8 +61,15 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 
 	cmd := cmds[0]
 	switch cmd {
+	case "/buy":
+		h.commandBuy(chatID)
+
 	case "/status":
 		h.commandStatus(chatID)
+
+	//TEST CASES
+	case "/testbuy":
+		h.commandTestBuyAll(chatID)
 
 	default:
 		h.commandNotFound(chatID)
@@ -83,6 +91,38 @@ func (h *Handler) commandStatus(chatID int) {
 		res += fmt.Sprintf("\n%v:\nIn USD: %v$\nFree: %v\nLocked: %v\n", v.asset, v.usd, v.free, v.locked)
 	}
 	h.sendMessage(chatID, res)
+}
+
+func (h *Handler) commandBuy(chatID int) {
+	ch := make(chan *OrderInfo)
+	go h.logic.CommandBuy(ch)
+	for order := range ch {
+		if order.Err != nil {
+			text := fmt.Sprintf("Error while Buy:\n\n%s", order.Err)
+			h.sendMessage(chatID, text)
+			return
+		}
+		if order.InfoType == 1 {
+			text := fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for 2 seconds..", order.Side, order.Price)
+			h.sendMessage(chatID, text)
+		} else if order.InfoType == 2 {
+			text := fmt.Sprintf("Done %v / %v\nStatus: %v", order.ExecutedQuantity, order.OrigQuantity, order.Status)
+			h.sendMessage(chatID, text)
+			if order.Status == binance.OrderStatusTypeFilled {
+				break
+			}
+		}
+	}
+	h.sendMessage(chatID, "Command \"/buy\" finished")
+}
+
+func (h *Handler) commandTestBuyAll(chatID int) {
+	err := h.logic.CommandTestOrderAll()
+	if err != nil {
+		text := fmt.Sprintf("Error while testBuyAll:\n\n%s", err)
+		h.sendMessage(chatID, text)
+		return
+	}
 }
 
 func (h *Handler) commandNotFound(chatID int) {

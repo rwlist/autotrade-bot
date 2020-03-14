@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"github.com/adshao/go-binance"
+	"log"
 	"strings"
 )
 
@@ -20,6 +21,19 @@ func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
 		return nil, err
 	}
 	return info.Balances, err
+}
+
+func (b *MyBinance) AccountUSDT() (float64, error) {
+	info, err := b.client.NewGetAccountService().Do(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	for _, bal := range info.Balances {
+		if bal.Asset == "USDT" {
+			return sum(bal.Free, bal.Locked), nil
+		}
+	}
+	return 0, nil
 }
 
 func (b *MyBinance) BalanceToUSD(bal *binance.Balance) (float64, error) {
@@ -45,6 +59,55 @@ func (b *MyBinance) GetRate() (string, error) {
 		return "", err
 	}
 	return symbolPrice[0].Price, nil
+}
+
+func (b *MyBinance) TestBuyAll() error {
+	price, err := b.GetRate()
+	if err != nil {
+		return err
+	}
+	usdt, err := b.AccountUSDT()
+	if err != nil {
+		return err
+	}
+	quantity := usdt / strToFloat64(price)
+	err = b.client.NewCreateOrderService().Symbol("BTCUSDT").
+		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Test(context.Background())
+	log.Println(err)
+	return err
+}
+
+func (b *MyBinance) BuyAll() (*binance.CreateOrderResponse, error) {
+	price, err := b.GetRate()
+	if err != nil {
+		return nil, err
+	}
+	usdt, err := b.AccountUSDT()
+	if err != nil {
+		return nil, err
+	}
+	quantity := usdt / strToFloat64(price)
+	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
+		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Do(context.Background())
+	return order, err
+}
+
+func (b *MyBinance) GetOrder(id int64) (*binance.Order, error) {
+	order, err := b.client.NewGetOrderService().Symbol("BTCUSDT").
+		OrderID(id).Do(context.Background())
+	return order, err
+}
+
+func (b *MyBinance) CancelOrder(id int64) error {
+	_, err := b.client.NewCancelOrderService().Symbol("BTCUSDT").
+		OrderID(id).Do(context.Background())
+	return err
+}
+
+func sum(str1, str2 string) float64 {
+	return strToFloat64(str1) + strToFloat64(str2)
 }
 
 func isEmptyBalance(str string) bool {
