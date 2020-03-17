@@ -61,6 +61,7 @@ func (b *MyBinance) GetRate() (string, error) {
 	return symbolPrice[0].Price, nil
 }
 
+//------------------------TEST_BUY_COMMAND------------------------------------------
 func (b *MyBinance) TestBuyAll() error {
 	price, err := b.GetRate()
 	if err != nil {
@@ -77,6 +78,7 @@ func (b *MyBinance) TestBuyAll() error {
 	log.Println(err)
 	return err
 }
+//---------------------------------------------------------------------------------------
 
 func (b *MyBinance) BuyAll() (*binance.CreateOrderResponse, error) {
 	price, err := b.GetRate()
@@ -88,6 +90,10 @@ func (b *MyBinance) BuyAll() (*binance.CreateOrderResponse, error) {
 		return nil, err
 	}
 	quantity := usdt / strToFloat64(price)
+	//----------TEST_VALUES---------------------
+	//price = "1100"
+	//quantity = 0.009109
+	//------------------------------------------
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
 		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Do(context.Background())

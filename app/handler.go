@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/adshao/go-binance"
 	"strings"
 
 	"github.com/petuhovskiy/telegram"
@@ -93,37 +92,29 @@ func (h *Handler) commandStatus(chatID int) {
 	h.sendMessage(chatID, res)
 }
 
+type Sender struct {
+	bot    *telegram.Bot
+	chatID int
+}
+
+func (s *Sender) Send(text string) {
+	_, _ = s.bot.SendMessage(&telegram.SendMessageRequest{
+		ChatID: str(s.chatID),
+		Text:   text,
+	})
+}
+
 func (h *Handler) commandBuy(chatID int) {
-	ch := make(chan *OrderInfo)
-	go h.logic.CommandBuy(ch)
-	for order := range ch {
-		if order.Err != nil {
-			text := fmt.Sprintf("Error while Buy:\n\n%s", order.Err)
-			h.sendMessage(chatID, text)
-			return
-		}
-		if order.InfoType == 1 {
-			text := fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for 2 seconds..", order.Side, order.Price)
-			h.sendMessage(chatID, text)
-		} else if order.InfoType == 2 {
-			text := fmt.Sprintf("Done %v / %v\nStatus: %v", order.ExecutedQuantity, order.OrigQuantity, order.Status)
-			h.sendMessage(chatID, text)
-			if order.Status == binance.OrderStatusTypeFilled {
-				break
-			}
-		}
-	}
+	h.logic.CommandBuy(&Sender{h.bot,chatID})
 	h.sendMessage(chatID, "Command \"/buy\" finished")
 }
 
+//----------TEST_BUY_COMMAND--------------------------
 func (h *Handler) commandTestBuyAll(chatID int) {
-	err := h.logic.CommandTestOrderAll()
-	if err != nil {
-		text := fmt.Sprintf("Error while testBuyAll:\n\n%s", err)
-		h.sendMessage(chatID, text)
-		return
-	}
+	h.logic.TestCommandBuy(&Sender{h.bot,chatID})
+	h.sendMessage(chatID, "Command \"/TESTbuy\" finished")
 }
+//-----------------------------------------------------
 
 func (h *Handler) commandNotFound(chatID int) {
 	h.commandHelp(chatID)

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"github.com/adshao/go-binance"
 	"time"
 )
@@ -67,82 +68,71 @@ func (l *Logic) CommandStatus() (*Status, error) {
 	return res, err
 }
 
-type OrderInfo struct {
-	InfoType int
-	Status binance.OrderStatusType
-	Side binance.SideType
-	Price string
-	OrigQuantity string
-	ExecutedQuantity string
-	Err error
-}
-
 const sleepDur = time.Duration(2) * time.Second
 
-func toChan1(ch chan *OrderInfo, order *binance.CreateOrderResponse, err error, InfoType int) {
-	orderInfo := &OrderInfo{
-		InfoType: InfoType,
-		Status: order.Status,
-		Side: "",
-		Price: "",
-		OrigQuantity: "",
-		ExecutedQuantity: "",
-		Err: err,
-	}
-	if  err == nil {
-		orderInfo.Side = order.Side
-		orderInfo.Price = order.Price
-	}
-	ch <- orderInfo
-}
-
-func toChan2(ch chan *OrderInfo, order *binance.Order, err error, InfoType int) {
-	orderInfo := &OrderInfo{
-		InfoType: InfoType,
-		Status: order.Status,
-		Side: "",
-		Price: "",
-		OrigQuantity: "",
-		ExecutedQuantity: "",
-		Err: err,
-	}
-	if  err == nil {
-		orderInfo.OrigQuantity = order.OrigQuantity
-		orderInfo.ExecutedQuantity = order.ExecutedQuantity
-	}
-	ch <- orderInfo
-}
-
-func (l *Logic) CommandBuy(ch chan *OrderInfo) {
+func (l *Logic) CommandBuy(s *Sender) {
 	for i := 0; i < 5; i++ {
-		orderCreate, err := l.b.BuyAll()
-		toChan1(ch, orderCreate, err, 1)
+		orderNew, err := l.b.BuyAll()
 		if err != nil {
-			close(ch)
+			s.Send(errorMessage(err))
 			return
 		}
+		s.Send(startMessage(&OrderNew{orderNew}))
 		time.Sleep(sleepDur)
-		order, err := l.b.GetOrder(orderCreate.OrderID)
-		toChan2(ch, order, err, 2)
+		order, err := l.b.GetOrder(orderNew.OrderID)
 		if err != nil {
-			close(ch)
+			s.Send(errorMessage(err))
 			return
 		}
+		s.Send(buyStatusMessage(&OrderExist{order}))
 		if order.Status == binance.OrderStatusTypeFilled {
-			close(ch)
+			congratsMessage(i)
 			return
 		}
 		err = l.b.CancelOrder(order.OrderID)
-		toChan2(ch, order, err, 0)
 		if err != nil {
-			close(ch)
+			s.Send(errorMessage(err))
 			return
 		}
 	}
-	close(ch)
 }
 
+//--------------------------------------TEMPLATES FOR SENDER----------------------------------------------
+func errorMessage(err error) string {
+	return fmt.Sprintf("Error while Buy:\n\n%s", err)
+}
+
+func congratsMessage(i int) string {
+	return fmt.Sprintf("Congratulations! Order filled in %v iterations!", i)
+}
+
+func startMessage(order Order) string {
+	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for 2 seconds..", order.Side(), order.Price())
+}
+
+func buyStatusMessage(order Order) string {
+	return fmt.Sprintf("Done %v / %v\nStatus: %v", order.ExecutedQuantity(), order.OrigQuantity(), order.Status())
+}
+//-------------------------------------------------------------------------------
+
 //TEST COMMANDS
-func (l *Logic) CommandTestOrderAll() error {
-	return l.b.TestBuyAll()
+func (l *Logic) TestCommandBuy(s *Sender) {
+	for i := 0; i < 5; i++ {
+		err := l.b.TestBuyAll()
+		if err != nil {
+			s.Send(errorMessage(err))
+			return
+		}
+		s.Send("START")
+		time.Sleep(sleepDur)
+		if err != nil {
+			s.Send(errorMessage(err))
+			return
+		}
+		s.Send("KekWait")
+		if err != nil {
+			s.Send(errorMessage(err))
+			return
+		}
+	}
 }
