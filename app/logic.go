@@ -2,8 +2,9 @@ package app
 
 import (
 	"fmt"
-	"github.com/adshao/go-binance"
 	"time"
+
+	"github.com/adshao/go-binance"
 )
 
 type Logic struct {
@@ -128,4 +129,5 @@ func startMessage(order Order) string {
 func orderStatusMessage(order Order) string {
 	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side(), order.ExecutedQuantity(), order.OrigQuantity(), order.Status())
 }
+
 //-------------------------------------------------------------------------------
