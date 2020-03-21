@@ -68,8 +68,7 @@ func (l *Logic) CommandStatus() (*Status, error) {
 	return res, err
 }
 
-const sleepSec = 1
-const sleepDur = time.Duration(sleepSec) * time.Second
+const sleepDur = time.Duration(1) * time.Second
 
 func (l *Logic) CommandBuy(s *Sender) {
 	for i := 0; i < 5; i++ {
@@ -123,7 +122,7 @@ func errorMessage(err error, side binance.SideType) string {
 }
 
 func startMessage(order Order) string {
-	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for %v seconds..", order.Side(), order.Price(), sleepSec)
+	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for %s", order.Side(), order.Price(), sleepDur)
 }
 
 func orderStatusMessage(order Order) string {
