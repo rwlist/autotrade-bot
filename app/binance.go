@@ -73,7 +73,7 @@ func (b *MyBinance) BuyAll() (*binance.CreateOrderResponse, error) {
 	quantity := usdt / strToFloat64(price)
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Do(context.Background())
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Do(context.Background())
 	return order, err
 }
 
@@ -88,7 +88,7 @@ func (b *MyBinance) SellAll() (*binance.CreateOrderResponse, error) {
 	}
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeSell).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Do(context.Background())
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Do(context.Background())
 	return order, err
 }
 
@@ -125,7 +125,7 @@ func (b *MyBinance) TestBuyAll() error {
 	quantity := usdt / strToFloat64(price)
 	err = b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Test(context.Background())
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Test(context.Background())
 	log.Println(err)
 	return err
 }

@@ -52,7 +52,7 @@ func (l *Logic) CommandStatus() (*Status, error) {
 		}
 		total += balUSD
 		resBal := &Balance{
-			   usd:    float64ToStr(balUSD),
+			   usd:    float64ToStr(balUSD, 2),
 			   asset:  bal.Asset,
 			   free:   bal.Free,
 			   locked: bal.Locked,
@@ -61,14 +61,14 @@ func (l *Logic) CommandStatus() (*Status, error) {
 	}
 
 	res := &Status{
-		total:	  float64ToStr(total),
+		total:	  float64ToStr(total, 2),
 		rate:     rate,
 		balances: balances,
 	}
 	return res, err
 }
 
-const sleepDur = time.Duration(2) * time.Second
+const sleepDur = time.Duration(1) * time.Second
 
 func (l *Logic) CommandBuy(s *Sender) {
 	for i := 0; i < 5; i++ {
@@ -138,7 +138,7 @@ func startMessage(order Order) string {
 }
 
 func orderStatusMessage(order Order) string {
-	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.ExecutedQuantity(), order.Side(), order.OrigQuantity(), order.Status())
+	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side(), order.ExecutedQuantity(), order.OrigQuantity(), order.Status())
 }
 //-------------------------------------------------------------------------------
 
