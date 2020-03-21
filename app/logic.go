@@ -134,7 +134,7 @@ func congratsMessage(i int) string {
 }
 
 func startMessage(order Order) string {
-	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for 2 seconds..", order.Side(), order.Price())
+	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for %s", order.Side(), order.Price(), sleepDur)
 }
 
 func orderStatusMessage(order Order) string {
