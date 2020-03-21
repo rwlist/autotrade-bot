@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+
 	"github.com/adshao/go-binance"
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
-	"log"
 
 	"github.com/rwlist/autotrade-bot/app"
 	"github.com/rwlist/autotrade-bot/conf"
