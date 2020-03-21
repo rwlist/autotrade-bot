@@ -23,13 +23,13 @@ func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
 	return info.Balances, err
 }
 
-func (b *MyBinance) AccountUSDT() (float64, error) {
+func (b *MyBinance) AccountSymbolBalance(symbol string) (float64, error) {
 	info, err := b.client.NewGetAccountService().Do(context.Background())
 	if err != nil {
 		return 0, err
 	}
 	for _, bal := range info.Balances {
-		if bal.Asset == "USDT" {
+		if bal.Asset == symbol {
 			return sum(bal.Free, bal.Locked), nil
 		}
 	}
@@ -61,41 +61,33 @@ func (b *MyBinance) GetRate() (string, error) {
 	return symbolPrice[0].Price, nil
 }
 
-//------------------------TEST_BUY_COMMAND------------------------------------------
-func (b *MyBinance) TestBuyAll() error {
-	price, err := b.GetRate()
-	if err != nil {
-		return err
-	}
-	usdt, err := b.AccountUSDT()
-	if err != nil {
-		return err
-	}
-	quantity := usdt / strToFloat64(price)
-	err = b.client.NewCreateOrderService().Symbol("BTCUSDT").
-		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Test(context.Background())
-	log.Println(err)
-	return err
-}
-//---------------------------------------------------------------------------------------
-
 func (b *MyBinance) BuyAll() (*binance.CreateOrderResponse, error) {
 	price, err := b.GetRate()
 	if err != nil {
 		return nil, err
 	}
-	usdt, err := b.AccountUSDT()
+	usdt, err := b.AccountSymbolBalance("USDT")
 	if err != nil {
 		return nil, err
 	}
 	quantity := usdt / strToFloat64(price)
-	//----------TEST_VALUES---------------------
-	//price = "1100"
-	//quantity = 0.009109
-	//------------------------------------------
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Do(context.Background())
+	return order, err
+}
+
+func (b *MyBinance) SellAll() (*binance.CreateOrderResponse, error) {
+	price, err := b.GetRate()
+	if err != nil {
+		return nil, err
+	}
+	quantity, err := b.AccountSymbolBalance("BTC")
+	if err != nil {
+		return nil, err
+	}
+	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
+		Side(binance.SideTypeSell).Type(binance.OrderTypeLimit).
 		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Do(context.Background())
 	return order, err
 }
@@ -119,3 +111,22 @@ func sum(str1, str2 string) float64 {
 func isEmptyBalance(str string) bool {
 	return strings.Trim(str, ".0") == ""
 }
+
+//------------------------TEST_BUY_COMMAND------------------------------------------
+func (b *MyBinance) TestBuyAll() error {
+	price, err := b.GetRate()
+	if err != nil {
+		return err
+	}
+	usdt, err := b.AccountSymbolBalance("USDT")
+	if err != nil {
+		return err
+	}
+	quantity := usdt / strToFloat64(price)
+	err = b.client.NewCreateOrderService().Symbol("BTCUSDT").
+		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStrLong(quantity)).Test(context.Background())
+	log.Println(err)
+	return err
+}
+//---------------------------------------------------------------------------------------

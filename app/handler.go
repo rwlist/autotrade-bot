@@ -60,6 +60,9 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 
 	cmd := cmds[0]
 	switch cmd {
+	case "/sell":
+		h.commandSell(chatID)
+
 	case "/buy":
 		h.commandBuy(chatID)
 
@@ -92,29 +95,16 @@ func (h *Handler) commandStatus(chatID int) {
 	h.sendMessage(chatID, res)
 }
 
-type Sender struct {
-	bot    *telegram.Bot
-	chatID int
-}
-
-func (s *Sender) Send(text string) {
-	_, _ = s.bot.SendMessage(&telegram.SendMessageRequest{
-		ChatID: str(s.chatID),
-		Text:   text,
-	})
-}
-
 func (h *Handler) commandBuy(chatID int) {
 	h.logic.CommandBuy(&Sender{h.bot,chatID})
 	h.sendMessage(chatID, "Command \"/buy\" finished")
 }
 
-//----------TEST_BUY_COMMAND--------------------------
-func (h *Handler) commandTestBuyAll(chatID int) {
-	h.logic.TestCommandBuy(&Sender{h.bot,chatID})
-	h.sendMessage(chatID, "Command \"/TESTbuy\" finished")
+func (h *Handler) commandSell(chatID int) {
+	h.logic.CommandSell(&Sender{h.bot,chatID})
+	h.sendMessage(chatID, "Command \"/sell\" finished")
 }
-//-----------------------------------------------------
+
 
 func (h *Handler) commandNotFound(chatID int) {
 	h.commandHelp(chatID)
@@ -127,3 +117,18 @@ func (h *Handler) commandHelp(chatID int) {
 
 	h.sendMessage(chatID, str)
 }
+
+
+
+
+
+
+
+
+
+//----------TEST_BUY_COMMAND--------------------------
+func (h *Handler) commandTestBuyAll(chatID int) {
+	h.logic.TestCommandBuy(&Sender{h.bot,chatID})
+	h.sendMessage(chatID, "Command \"/TESTbuy\" finished")
+}
+//-----------------------------------------------------
