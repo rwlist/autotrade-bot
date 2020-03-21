@@ -20,5 +20,5 @@ func strToFloat64(str string) float64 {
 }
 
 func Round(f float64, d int) float64 {
-	return float64(int(f * math.Pow10(d))) / math.Pow10(d)
+	return float64(int(f*math.Pow10(d))) / math.Pow10(d)
 }
