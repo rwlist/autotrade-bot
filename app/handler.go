@@ -69,10 +69,6 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 	case "/status":
 		h.commandStatus(chatID)
 
-	//TEST CASES
-	case "/testbuy":
-		h.commandTestBuyAll(chatID)
-
 	default:
 		h.commandNotFound(chatID)
 	}
@@ -96,15 +92,14 @@ func (h *Handler) commandStatus(chatID int) {
 }
 
 func (h *Handler) commandBuy(chatID int) {
-	h.logic.CommandBuy(&Sender{h.bot,chatID})
+	h.logic.CommandBuy(&Sender{h.bot, chatID})
 	h.sendMessage(chatID, "Command \"/buy\" finished")
 }
 
 func (h *Handler) commandSell(chatID int) {
-	h.logic.CommandSell(&Sender{h.bot,chatID})
+	h.logic.CommandSell(&Sender{h.bot, chatID})
 	h.sendMessage(chatID, "Command \"/sell\" finished")
 }
-
 
 func (h *Handler) commandNotFound(chatID int) {
 	h.commandHelp(chatID)
@@ -117,18 +112,3 @@ func (h *Handler) commandHelp(chatID int) {
 
 	h.sendMessage(chatID, str)
 }
-
-
-
-
-
-
-
-
-
-//----------TEST_BUY_COMMAND--------------------------
-func (h *Handler) commandTestBuyAll(chatID int) {
-	h.logic.TestCommandBuy(&Sender{h.bot,chatID})
-	h.sendMessage(chatID, "Command \"/TESTbuy\" finished")
-}
-//-----------------------------------------------------

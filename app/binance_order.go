@@ -9,4 +9,3 @@ type Order interface {
 	Status() string
 	Side() string
 }
-

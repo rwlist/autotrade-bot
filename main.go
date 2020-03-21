@@ -31,9 +31,9 @@ func main() {
 	})
 
 	ch, err := updates.StartPolling(bot, telegram.GetUpdatesRequest{
-		Offset:         0,
-		Limit:          50,
-		Timeout:        10,
+		Offset:  0,
+		Limit:   50,
+		Timeout: 10,
 	})
 	if err != nil {
 		log.Fatal(err)

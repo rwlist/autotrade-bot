@@ -24,7 +24,7 @@ type Balance struct {
 }
 
 type Status struct {
-	total	 string
+	total    string
 	rate     string
 	balances []*Balance
 }
@@ -52,23 +52,24 @@ func (l *Logic) CommandStatus() (*Status, error) {
 		}
 		total += balUSD
 		resBal := &Balance{
-			   usd:    float64ToStr(balUSD, 2),
-			   asset:  bal.Asset,
-			   free:   bal.Free,
-			   locked: bal.Locked,
+			usd:    float64ToStr(balUSD, 2),
+			asset:  bal.Asset,
+			free:   bal.Free,
+			locked: bal.Locked,
 		}
 		balances = append(balances, resBal)
 	}
 
 	res := &Status{
-		total:	  float64ToStr(total, 2),
+		total:    float64ToStr(total, 2),
 		rate:     rate,
 		balances: balances,
 	}
 	return res, err
 }
 
-const sleepDur = time.Duration(1) * time.Second
+const sleepSec = 1
+const sleepDur = time.Duration(sleepSec) * time.Second
 
 func (l *Logic) CommandBuy(s *Sender) {
 	for i := 0; i < 5; i++ {
@@ -85,10 +86,6 @@ func (l *Logic) CommandBuy(s *Sender) {
 			return
 		}
 		s.Send(orderStatusMessage(&OrderExist{order}))
-		if order.Status == binance.OrderStatusTypeFilled {
-			congratsMessage(i)
-			return
-		}
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
 			s.Send(errorMessage(err, binance.SideTypeBuy))
@@ -112,10 +109,6 @@ func (l *Logic) CommandSell(s *Sender) {
 			return
 		}
 		s.Send(orderStatusMessage(&OrderExist{order}))
-		if order.Status == binance.OrderStatusTypeFilled {
-			congratsMessage(i)
-			return
-		}
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
 			s.Send(errorMessage(err, binance.SideTypeSell))
@@ -126,40 +119,14 @@ func (l *Logic) CommandSell(s *Sender) {
 
 //--------------------------------------TEMPLATES FOR SENDER----------------------------------------------
 func errorMessage(err error, side binance.SideType) string {
-	return fmt.Sprintf("Error while %v:\n\n%s", err, side)
-}
-
-func congratsMessage(i int) string {
-	return fmt.Sprintf("Congratulations! Order filled in %v iterations!", i)
+	return fmt.Sprintf("Error while %v:\n\n%s", side, err)
 }
 
 func startMessage(order Order) string {
-	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for 2 seconds..", order.Side(), order.Price())
+	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for %v seconds..", order.Side(), order.Price(), sleepSec)
 }
 
 func orderStatusMessage(order Order) string {
 	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side(), order.ExecutedQuantity(), order.OrigQuantity(), order.Status())
 }
 //-------------------------------------------------------------------------------
-
-//TEST COMMANDS
-func (l *Logic) TestCommandBuy(s *Sender) {
-	for i := 0; i < 5; i++ {
-		err := l.b.TestBuyAll()
-		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeBuy))
-			return
-		}
-		s.Send("START")
-		time.Sleep(sleepDur)
-		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeBuy))
-			return
-		}
-		s.Send("KekWait")
-		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeBuy))
-			return
-		}
-	}
-}

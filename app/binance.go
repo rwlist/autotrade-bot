@@ -2,9 +2,9 @@ package app
 
 import (
 	"context"
-	"github.com/adshao/go-binance"
-	"log"
 	"strings"
+
+	"github.com/adshao/go-binance"
 )
 
 type MyBinance struct {
@@ -12,7 +12,7 @@ type MyBinance struct {
 }
 
 func NewMyBinance(c *binance.Client) *MyBinance {
-	return &MyBinance{client : c}
+	return &MyBinance{c}
 }
 
 func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
@@ -111,22 +111,3 @@ func sum(str1, str2 string) float64 {
 func isEmptyBalance(str string) bool {
 	return strings.Trim(str, ".0") == ""
 }
-
-//------------------------TEST_BUY_COMMAND------------------------------------------
-func (b *MyBinance) TestBuyAll() error {
-	price, err := b.GetRate()
-	if err != nil {
-		return err
-	}
-	usdt, err := b.AccountSymbolBalance("USDT")
-	if err != nil {
-		return err
-	}
-	quantity := usdt / strToFloat64(price)
-	err = b.client.NewCreateOrderService().Symbol("BTCUSDT").
-		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Test(context.Background())
-	log.Println(err)
-	return err
-}
-//---------------------------------------------------------------------------------------
