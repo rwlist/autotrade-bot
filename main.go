@@ -39,11 +39,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	c := binance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret)
-	l := app.NewLogic(app.NewMyBinance(c))
-	h := app.NewHandler(bot, l, cfg)
+	cli := binance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret)
+	cli.Debug = true
+	logic := app.NewLogic(app.NewMyBinance(cli))
+	handler := app.NewHandler(bot, logic, cfg)
 
 	for upd := range ch {
-		h.Handle(upd)
+		handler.Handle(upd)
 	}
 }
