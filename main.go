@@ -45,6 +45,6 @@ func main() {
 	handler := app.NewHandler(bot, logic, cfg)
 
 	for upd := range ch {
-		handler.Handle(upd)
+		handler.Handle(&upd)
 	}
 }

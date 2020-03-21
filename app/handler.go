@@ -23,7 +23,7 @@ func NewHandler(bot *telegram.Bot, logic *Logic, cfg *conf.Struct) *Handler {
 	}
 }
 
-func (h *Handler) Handle(upd telegram.Update) {
+func (h *Handler) Handle(upd *telegram.Update) {
 	if upd.Message == nil {
 		return
 	}
