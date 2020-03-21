@@ -23,7 +23,7 @@ func NewHandler(bot *telegram.Bot, logic *Logic, cfg *conf.Struct) *Handler {
 	}
 }
 
-func (h *Handler) Handle(upd telegram.Update) {
+func (h *Handler) Handle(upd *telegram.Update) {
 	if upd.Message == nil {
 		return
 	}
@@ -60,6 +60,12 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 
 	cmd := cmds[0]
 	switch cmd {
+	case "/sell":
+		h.commandSell(chatID)
+
+	case "/buy":
+		h.commandBuy(chatID)
+
 	case "/status":
 		h.commandStatus(chatID)
 
@@ -83,6 +89,16 @@ func (h *Handler) commandStatus(chatID int) {
 		res += fmt.Sprintf("\n%v:\nIn USD: %v$\nFree: %v\nLocked: %v\n", v.asset, v.usd, v.free, v.locked)
 	}
 	h.sendMessage(chatID, res)
+}
+
+func (h *Handler) commandBuy(chatID int) {
+	h.logic.CommandBuy(&Sender{h.bot, chatID})
+	h.sendMessage(chatID, "Command \"/buy\" finished")
+}
+
+func (h *Handler) commandSell(chatID int) {
+	h.logic.CommandSell(&Sender{h.bot, chatID})
+	h.sendMessage(chatID, "Command \"/sell\" finished")
 }
 
 func (h *Handler) commandNotFound(chatID int) {

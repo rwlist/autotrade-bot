@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+
 	"github.com/adshao/go-binance"
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
-	"log"
 
 	"github.com/rwlist/autotrade-bot/app"
 	"github.com/rwlist/autotrade-bot/conf"
@@ -31,19 +32,20 @@ func main() {
 	})
 
 	ch, err := updates.StartPolling(bot, telegram.GetUpdatesRequest{
-		Offset:         0,
-		Limit:          50,
-		Timeout:        10,
+		Offset:  0,
+		Limit:   50,
+		Timeout: 10,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c := binance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret)
-	l := app.NewLogic(app.NewMyBinance(c))
-	h := app.NewHandler(bot, l, cfg)
+	cli := binance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret)
+	cli.Debug = true
+	logic := app.NewLogic(app.NewMyBinance(cli))
+	handler := app.NewHandler(bot, logic, cfg)
 
 	for upd := range ch {
-		h.Handle(upd)
+		handler.Handle(&upd)
 	}
 }
