@@ -10,6 +10,10 @@ func str(id int) string {
 	return strconv.Itoa(id)
 }
 
+func str64(id int64) string {
+	return fmt.Sprintf("%v", id)
+}
+
 func float64ToStr(f float64, d int) string {
 	return fmt.Sprintf("%f", Round(f, d))
 }

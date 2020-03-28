@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"math"
 	"strings"
+	"time"
 
 	"github.com/adshao/go-binance"
 )
@@ -61,7 +63,7 @@ func (b *MyBinance) GetRate() (string, error) {
 	return symbolPrice[0].Price, nil
 }
 
-func (b *MyBinance) BuyAll() (*binance.CreateOrderResponse, error) {
+func (b *MyBinance) BuyAll() (Order, error) {
 	price, err := b.GetRate()
 	if err != nil {
 		return nil, err
@@ -74,10 +76,10 @@ func (b *MyBinance) BuyAll() (*binance.CreateOrderResponse, error) {
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
 		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Do(context.Background())
-	return order, err
+	return &OrderNew{order}, err
 }
 
-func (b *MyBinance) SellAll() (*binance.CreateOrderResponse, error) {
+func (b *MyBinance) SellAll() (Order, error) {
 	price, err := b.GetRate()
 	if err != nil {
 		return nil, err
@@ -89,19 +91,72 @@ func (b *MyBinance) SellAll() (*binance.CreateOrderResponse, error) {
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeSell).Type(binance.OrderTypeLimit).
 		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Do(context.Background())
-	return order, err
+	return &OrderNew{order}, err
 }
 
-func (b *MyBinance) GetOrder(id int64) (*binance.Order, error) {
+func (b *MyBinance) GetOrder(id int64) (Order, error) {
 	order, err := b.client.NewGetOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
-	return order, err
+	return &OrderExist{order}, err
 }
 
 func (b *MyBinance) CancelOrder(id int64) error {
 	_, err := b.client.NewCancelOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
 	return err
+}
+
+type KlineTOHLCV struct {
+	T int64
+	O float64
+	H float64
+	L float64
+	C float64
+	V float64
+}
+
+type TOHLCVs []KlineTOHLCV
+
+func (TOHLCV TOHLCVs) Len() int {
+	return len(TOHLCV)
+}
+
+func (TOHLCV *TOHLCVs) Last() KlineTOHLCV {
+	return (*TOHLCV)[TOHLCV.Len() - 1]
+}
+
+func (TOHLCV TOHLCVs) TOHLCV(i int) (float64, float64, float64, float64, float64, float64) {
+	return float64(TOHLCV[i].T), TOHLCV[i].O, TOHLCV[i].H, TOHLCV[i].L, TOHLCV[i].C, TOHLCV[i].V
+}
+
+func (b *MyBinance) GetKlines() (TOHLCVs, float64, float64, float64, float64, error) {
+	klines, err := b.client.
+		NewKlinesService().Symbol("BTCUSDT").
+		Interval("15m").
+		StartTime(int64(1000) * (time.Now().Add(-time.Hour * 24).Unix())).
+		Do(context.Background())
+	if err != nil {
+		return nil, .0, .0, .0, .0, err
+	}
+
+	var result TOHLCVs
+
+	// Extracting data from response
+	min := 1000000000.
+	max := -1.
+	for _, val := range klines {
+		result = append(result, KlineTOHLCV{
+			T: val.CloseTime / 1000,
+			O: strToFloat64(val.Open),
+			H: strToFloat64(val.High),
+			L: strToFloat64(val.Low),
+			C: strToFloat64(val.Close),
+			V: strToFloat64(val.Volume),
+		})
+		min = math.Min(min, strToFloat64(val.Low))
+		max = math.Max(max, strToFloat64(val.High))
+	}
+	return result, result.Last().C, min, max, float64(klines[0].OpenTime / 1000), nil
 }
 
 func sum(str1, str2 string) float64 {

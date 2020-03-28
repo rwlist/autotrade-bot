@@ -13,3 +13,11 @@ func (s *Sender) Send(text string) {
 		Text:   text,
 	})
 }
+
+func (s *Sender) SendPhoto(name string, b []byte) error {
+	_, err := s.bot.SendPhoto(&telegram.SendPhotoRequest{
+		ChatID: str(s.chatID),
+		Photo: NewBytesUploader("Graph.png", b),
+	})
+	return err
+}
