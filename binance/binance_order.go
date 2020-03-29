@@ -1,4 +1,4 @@
-package app
+package binance
 
 type Order interface {
 	Symbol() string

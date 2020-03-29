@@ -1,6 +1,9 @@
 package app
 
-import "github.com/petuhovskiy/telegram"
+import (
+	"github.com/petuhovskiy/telegram"
+	"github.com/rwlist/autotrade-bot/to_str"
+)
 
 type Sender struct {
 	bot    *telegram.Bot
@@ -9,15 +12,15 @@ type Sender struct {
 
 func (s *Sender) Send(text string) {
 	_, _ = s.bot.SendMessage(&telegram.SendMessageRequest{
-		ChatID: str(s.chatID),
+		ChatID: to_str.Str(s.chatID),
 		Text:   text,
 	})
 }
 
 func (s *Sender) SendPhoto(name string, b []byte) error {
 	_, err := s.bot.SendPhoto(&telegram.SendPhotoRequest{
-		ChatID: str(s.chatID),
-		Photo: NewBytesUploader("Graph.png", b),
+		ChatID: to_str.Str(s.chatID),
+		Photo:  NewBytesUploader(name, b),
 	})
 	return err
 }

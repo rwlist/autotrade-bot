@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rwlist/autotrade-bot/to_str"
+
 	"github.com/petuhovskiy/telegram"
 
 	"github.com/rwlist/autotrade-bot/conf"
@@ -38,7 +40,7 @@ func (h *Handler) Handle(upd *telegram.Update) {
 
 func (h *Handler) sendMessage(chatID int, text string) {
 	_, _ = h.bot.SendMessage(&telegram.SendMessageRequest{
-		ChatID: str(chatID),
+		ChatID: to_str.Str(chatID),
 		Text:   text,
 	})
 }

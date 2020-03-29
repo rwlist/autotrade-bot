@@ -1,4 +1,4 @@
-package app
+package to_str
 
 import (
 	"fmt"
@@ -6,19 +6,19 @@ import (
 	"strconv"
 )
 
-func str(id int) string {
+func Str(id int) string {
 	return strconv.Itoa(id)
 }
 
-func str64(id int64) string {
+func Str64(id int64) string {
 	return fmt.Sprintf("%v", id)
 }
 
-func float64ToStr(f float64, d int) string {
+func Float64ToStr(f float64, d int) string {
 	return fmt.Sprintf("%f", Round(f, d))
 }
 
-func strToFloat64(str string) float64 {
+func StrToFloat64(str string) float64 {
 	f, _ := strconv.ParseFloat(str, 64)
 	return f
 }

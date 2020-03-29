@@ -1,4 +1,4 @@
-package app
+package binance
 
 import (
 	"context"
@@ -6,15 +6,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rwlist/autotrade-bot/conf"
+
 	"github.com/adshao/go-binance"
+	"github.com/rwlist/autotrade-bot/to_str"
 )
 
 type MyBinance struct {
 	client *binance.Client
 }
 
-func NewMyBinance(c *binance.Client) *MyBinance {
-	return &MyBinance{c}
+func NewMyBinance(cfg conf.Binance, debug bool) *MyBinance {
+	cli := binance.NewClient(cfg.APIKey, cfg.Secret)
+	cli.Debug = debug
+	return &MyBinance{cli}
 }
 
 func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
@@ -39,8 +44,8 @@ func (b *MyBinance) AccountSymbolBalance(symbol string) (float64, error) {
 }
 
 func (b *MyBinance) BalanceToUSD(bal *binance.Balance) (float64, error) {
-	haveFree := strToFloat64(bal.Free)
-	haveLocked := strToFloat64(bal.Locked)
+	haveFree := to_str.StrToFloat64(bal.Free)
+	haveLocked := to_str.StrToFloat64(bal.Locked)
 	if bal.Asset == "USDT" {
 		return haveFree + haveLocked, nil
 	}
@@ -49,7 +54,7 @@ func (b *MyBinance) BalanceToUSD(bal *binance.Balance) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	price := strToFloat64(symbolPrice[0].Price)
+	price := to_str.StrToFloat64(symbolPrice[0].Price)
 	haveFree *= price
 	haveLocked *= price
 	return haveFree + haveLocked, nil
@@ -72,10 +77,10 @@ func (b *MyBinance) BuyAll() (Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	quantity := usdt / strToFloat64(price)
+	quantity := usdt / to_str.StrToFloat64(price)
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Do(context.Background())
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(to_str.Float64ToStr(quantity, 6)).Do(context.Background())
 	return &OrderNew{order}, err
 }
 
@@ -90,7 +95,7 @@ func (b *MyBinance) SellAll() (Order, error) {
 	}
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeSell).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(float64ToStr(quantity, 6)).Do(context.Background())
+		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(to_str.Float64ToStr(quantity, 6)).Do(context.Background())
 	return &OrderNew{order}, err
 }
 
@@ -122,7 +127,7 @@ func (TOHLCV TOHLCVs) Len() int {
 }
 
 func (TOHLCV *TOHLCVs) Last() KlineTOHLCV {
-	return (*TOHLCV)[TOHLCV.Len() - 1]
+	return (*TOHLCV)[TOHLCV.Len()-1]
 }
 
 func (TOHLCV TOHLCVs) TOHLCV(i int) (float64, float64, float64, float64, float64, float64) {
@@ -147,22 +152,22 @@ func (b *MyBinance) GetKlines() (TOHLCVs, float64, float64, float64, float64, er
 	for _, val := range klines {
 		result = append(result, KlineTOHLCV{
 			T: val.CloseTime / 1000,
-			O: strToFloat64(val.Open),
-			H: strToFloat64(val.High),
-			L: strToFloat64(val.Low),
-			C: strToFloat64(val.Close),
-			V: strToFloat64(val.Volume),
+			O: to_str.StrToFloat64(val.Open),
+			H: to_str.StrToFloat64(val.High),
+			L: to_str.StrToFloat64(val.Low),
+			C: to_str.StrToFloat64(val.Close),
+			V: to_str.StrToFloat64(val.Volume),
 		})
-		min = math.Min(min, strToFloat64(val.Low))
-		max = math.Max(max, strToFloat64(val.High))
+		min = math.Min(min, to_str.StrToFloat64(val.Low))
+		max = math.Max(max, to_str.StrToFloat64(val.High))
 	}
 	return result, result.Last().C, min, max, float64(klines[0].OpenTime / 1000), nil
 }
 
 func sum(str1, str2 string) float64 {
-	return strToFloat64(str1) + strToFloat64(str2)
+	return to_str.StrToFloat64(str1) + to_str.StrToFloat64(str2)
 }
 
-func isEmptyBalance(str string) bool {
+func IsEmptyBalance(str string) bool {
 	return strings.Trim(str, ".0") == ""
 }
