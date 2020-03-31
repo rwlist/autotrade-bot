@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/rwlist/autotrade-bot/draw"
 	"github.com/rwlist/autotrade-bot/to_str"
 
@@ -122,7 +120,8 @@ func (l *Logic) CommandSell(s *Sender) {
 }
 
 func (l *Logic) CommandDraw(s *Sender) {
-	klines, lastPrice, minPrice, maxPrice, startTime, err := l.b.GetKlines()
+	klines, err := l.b.GetKlines()
+
 	if err != nil {
 		s.Send(errorMessage(err, "Draw GetKlines"))
 		return
@@ -135,7 +134,7 @@ func (l *Logic) CommandDraw(s *Sender) {
 	}
 
 	p.DrawEnv()
-	p.DrawHelpLines(lastPrice, minPrice, maxPrice, startTime)
+	p.DrawHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
 	err = p.DrawMainGraph(klines)
 	if err != nil {
 		s.Send(errorMessage(err, "Draw in p.DrawMainGraph(klines)"))
@@ -153,18 +152,3 @@ func (l *Logic) CommandDraw(s *Sender) {
 		return
 	}
 }
-
-//--------------------------------------TEMPLATES FOR SENDER----------------------------------------------
-func errorMessage(err error, command string) string {
-	return fmt.Sprintf("Error while %v:\n\n%s", command, err)
-}
-
-func startMessage(order binance.Order) string {
-	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for %s", order.Side(), order.Price(), sleepDur)
-}
-
-func orderStatusMessage(order binance.Order) string {
-	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side(), order.ExecutedQuantity(), order.OrigQuantity(), order.Status())
-}
-
-//-------------------------------------------------------------------------------

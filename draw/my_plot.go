@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"image/color"
 
-	"github.com/rwlist/autotrade-bot/binance"
 	"gonum.org/v1/plot"
 
 	"github.com/pplcc/plotext/custplotter"
@@ -12,7 +11,7 @@ import (
 )
 
 type Plot struct {
-	plot *plot.Plot
+	Plot *plot.Plot
 }
 
 func NewPlot() (Plot, error) {
@@ -21,18 +20,18 @@ func NewPlot() (Plot, error) {
 }
 
 func (p Plot) DrawEnv() {
-	p.plot.X.Tick.Marker = AllTimeTicks{}
-	p.plot.Y.Tick.Marker = AllPriceTicks{}
-	p.plot.Add(plotter.NewGrid())
+	p.Plot.X.Tick.Marker = AllTimeTicks{}
+	p.Plot.Y.Tick.Marker = AllPriceTicks{}
+	p.Plot.Add(plotter.NewGrid())
 }
 
 func (p Plot) DrawHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
-	p.plot.Add(MakeHorLine(startTime, lastPrice, 0, 0, 255))
-	p.plot.Add(MakeHorLine(startTime, minPrice, 255, 0, 0))
-	p.plot.Add(MakeHorLine(startTime, maxPrice, 0, 255, 0))
+	p.Plot.Add(MakeHorLine(startTime, lastPrice, 0, 0, 255))
+	p.Plot.Add(MakeHorLine(startTime, minPrice, 255, 0, 0))
+	p.Plot.Add(MakeHorLine(startTime, maxPrice, 0, 255, 0))
 }
 
-func (p Plot) DrawMainGraph(klines binance.TOHLCVs) error {
+func (p Plot) DrawMainGraph(klines Klines) error {
 	bars, err := custplotter.NewCandlesticks(klines)
 	if err != nil {
 		return err
@@ -49,12 +48,12 @@ func (p Plot) DrawMainGraph(klines binance.TOHLCVs) error {
 		B: 0,
 		A: 255,
 	}
-	p.plot.Add(bars)
+	p.Plot.Add(bars)
 	return nil
 }
 
 func (p Plot) SaveToBuffer() (*bytes.Buffer, error) {
-	w, err := p.plot.WriterTo(900, 400, "png")
+	w, err := p.Plot.WriterTo(900, 400, "png")
 	if err != nil {
 		return nil, err
 	}

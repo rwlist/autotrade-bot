@@ -2,6 +2,7 @@ package binance
 
 import (
 	"context"
+	"github.com/rwlist/autotrade-bot/draw"
 	"math"
 	"strings"
 	"time"
@@ -111,46 +112,23 @@ func (b *MyBinance) CancelOrder(id int64) error {
 	return err
 }
 
-type KlineTOHLCV struct {
-	T int64
-	O float64
-	H float64
-	L float64
-	C float64
-	V float64
-}
-
-type TOHLCVs []KlineTOHLCV
-
-func (TOHLCV TOHLCVs) Len() int {
-	return len(TOHLCV)
-}
-
-func (TOHLCV *TOHLCVs) Last() KlineTOHLCV {
-	return (*TOHLCV)[TOHLCV.Len()-1]
-}
-
-func (TOHLCV TOHLCVs) TOHLCV(i int) (float64, float64, float64, float64, float64, float64) {
-	return float64(TOHLCV[i].T), TOHLCV[i].O, TOHLCV[i].H, TOHLCV[i].L, TOHLCV[i].C, TOHLCV[i].V
-}
-
-func (b *MyBinance) GetKlines() (TOHLCVs, float64, float64, float64, float64, error) {
+func (b *MyBinance) GetKlines() (draw.Klines, error) {
 	klines, err := b.client.
 		NewKlinesService().Symbol("BTCUSDT").
 		Interval("15m").
 		StartTime(int64(1000) * (time.Now().Add(-time.Hour * 24).Unix())).
 		Do(context.Background())
 	if err != nil {
-		return nil, .0, .0, .0, .0, err
+		return draw.Klines{}, err
 	}
 
-	var result TOHLCVs
+	var result draw.Klines
 
 	// Extracting data from response
-	min := 1000000000.
-	max := -1.
+	result.Min = 1000000000.
+	result.Max = -1.
 	for _, val := range klines {
-		result = append(result, KlineTOHLCV{
+		result.Klines = append(result.Klines, draw.KlineTOHLCV{
 			T: val.CloseTime / 1000,
 			O: to_str.StrToFloat64(val.Open),
 			H: to_str.StrToFloat64(val.High),
@@ -158,10 +136,12 @@ func (b *MyBinance) GetKlines() (TOHLCVs, float64, float64, float64, float64, er
 			C: to_str.StrToFloat64(val.Close),
 			V: to_str.StrToFloat64(val.Volume),
 		})
-		min = math.Min(min, to_str.StrToFloat64(val.Low))
-		max = math.Max(max, to_str.StrToFloat64(val.High))
+		result.Min = math.Min(result.Min, to_str.StrToFloat64(val.Low))
+		result.Max = math.Max(result.Max, to_str.StrToFloat64(val.High))
 	}
-	return result, result.Last().C, min, max, float64(klines[0].OpenTime / 1000), nil
+	result.Last = to_str.StrToFloat64(klines[len(klines)-1].Close)
+	result.StartTime = float64(klines[0].OpenTime / 1000)
+	return result, nil
 }
 
 func sum(str1, str2 string) float64 {
