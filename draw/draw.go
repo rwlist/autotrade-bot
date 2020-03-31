@@ -5,7 +5,8 @@ import (
 	"image/color"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/to_str"
+	"github.com/rwlist/autotrade-bot/tostr"
+
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 )
@@ -16,9 +17,9 @@ func (AllTimeTicks) Ticks(min, max float64) []plot.Tick {
 	tks := plot.DefaultTicks{}.Ticks(min, max)
 	for i, t := range tks {
 		ut := time.Unix(int64(t.Value), 0)
-		d := to_str.Str(ut.Day())
-		h := to_str.Str(ut.Hour())
-		m := to_str.Str(ut.Minute())
+		d := tostr.Str(ut.Day())
+		h := tostr.Str(ut.Hour())
+		m := tostr.Str(ut.Minute())
 		if len(d) == 1 {
 			d = "0" + d
 		}
@@ -39,7 +40,7 @@ func (AllPriceTicks) Ticks(min, max float64) []plot.Tick {
 	tks := plot.DefaultTicks{}.Ticks(min, max)
 	for i, t := range tks {
 		if t.Label == "" {
-			tks[i].Label = to_str.Str64(int64(t.Value))
+			tks[i].Label = tostr.Str64(int64(t.Value))
 		}
 	}
 	return tks

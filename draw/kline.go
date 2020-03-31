@@ -21,6 +21,6 @@ func (k Klines) Len() int {
 	return len(k.Klines)
 }
 
-func (k Klines) TOHLCV(i int) (float64, float64, float64, float64, float64, float64) {
+func (k Klines) TOHLCV(i int) (t, o, h, l, c, v float64) {
 	return float64(k.Klines[i].T), k.Klines[i].O, k.Klines[i].H, k.Klines[i].L, k.Klines[i].C, k.Klines[i].V
 }

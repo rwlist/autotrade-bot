@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/rwlist/autotrade-bot/draw"
-	"github.com/rwlist/autotrade-bot/to_str"
+	"github.com/rwlist/autotrade-bot/tostr"
 
 	"time"
 
@@ -49,13 +49,14 @@ func (l *Logic) CommandStatus() (*Status, error) {
 			continue
 		}
 
+		bal := bal
 		balUSD, err := l.b.BalanceToUSD(&bal)
 		if err != nil {
 			return &Status{}, err
 		}
 		total += balUSD
 		resBal := &Balance{
-			usd:    to_str.Float64ToStr(balUSD, 2),
+			usd:    tostr.Float64ToStr(balUSD, 2),
 			asset:  bal.Asset,
 			free:   bal.Free,
 			locked: bal.Locked,
@@ -64,14 +65,14 @@ func (l *Logic) CommandStatus() (*Status, error) {
 	}
 
 	res := &Status{
-		total:    to_str.Float64ToStr(total, 2),
+		total:    tostr.Float64ToStr(total, 2),
 		rate:     rate,
 		balances: balances,
 	}
 	return res, err
 }
 
-const sleepDur = time.Duration(1) * time.Second
+const sleepDur = time.Second
 
 func (l *Logic) CommandBuy(s *Sender) {
 	for i := 0; i < 5; i++ {

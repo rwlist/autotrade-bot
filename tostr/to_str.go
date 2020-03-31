@@ -1,4 +1,4 @@
-package to_str
+package tostr
 
 import (
 	"fmt"

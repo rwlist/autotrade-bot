@@ -6,7 +6,6 @@ import (
 
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
-
 	"github.com/rwlist/autotrade-bot/app"
 	"github.com/rwlist/autotrade-bot/binance"
 	"github.com/rwlist/autotrade-bot/conf"
@@ -44,6 +43,7 @@ func main() {
 	handler := app.NewHandler(bot, logic, cfg)
 
 	for upd := range ch {
+		upd := upd
 		handler.Handle(&upd)
 	}
 }

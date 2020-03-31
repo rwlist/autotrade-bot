@@ -30,7 +30,7 @@ linters-settings:
         # don't include the "operation" and "assign"
         checks: argument,case,condition,return
   govet:
-    check-shadowing: true
+    check-shadowing: false
   lll:
     line-length: 140
   maligned:
@@ -46,7 +46,6 @@ linters:
     - bodyclose
     - deadcode
     - dogsled
-    - dupl
     - funlen
     - gochecknoinits
     - goconst
@@ -61,7 +60,6 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - lll
     - misspell
     - nakedret
@@ -78,6 +76,8 @@ linters:
     - whitespace
 
   # don't enable:
+  # - dupl
+  # - interfacer
   # - gochecknoglobals
   # - gocognit
   # - godox
@@ -90,6 +90,9 @@ issues:
     - path: _test\.go
       linters:
         - gomnd
+    - linters:
+        - gomnd
+      text: "Magic number: 1,"
 
 run:
   skip-dirs:

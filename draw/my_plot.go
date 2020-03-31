@@ -52,8 +52,11 @@ func (p Plot) DrawMainGraph(klines Klines) error {
 	return nil
 }
 
+const DefaultWidth = 900
+const DefaultHeight = 400
+
 func (p Plot) SaveToBuffer() (*bytes.Buffer, error) {
-	w, err := p.Plot.WriterTo(900, 400, "png")
+	w, err := p.Plot.WriterTo(DefaultWidth, DefaultHeight, "png")
 	if err != nil {
 		return nil, err
 	}
