@@ -117,7 +117,11 @@ func (h *Handler) commandNotFound(chatID int) {
 func (h *Handler) commandHelp(chatID int) {
 	str := `Need some help?
 
-/status				displays btc/usdt rate and your binance wallet balance`
+/status				displays BTC/USDT rate and your binance wallet balance
+/sell				sells all BTC
+/buy				buys BTC with all USDT
+/draw rate-10+0.0002*(now-start)^1.2
+`
 
 	h.sendMessage(chatID, str)
 }
