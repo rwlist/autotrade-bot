@@ -1,10 +1,12 @@
 package app
 
 import (
-	"github.com/rwlist/autotrade-bot/draw"
-	"github.com/rwlist/autotrade-bot/tostr"
-
+	"math"
 	"time"
+
+	"github.com/rwlist/autotrade-bot/draw"
+	"github.com/rwlist/autotrade-bot/formula"
+	"github.com/rwlist/autotrade-bot/tostr"
 
 	"github.com/rwlist/autotrade-bot/binance"
 )
@@ -120,11 +122,15 @@ func (l *Logic) CommandSell(s *Sender) {
 	}
 }
 
-func (l *Logic) CommandDraw(s *Sender) {
+func (l *Logic) CommandDraw(s *Sender, str string) {
 	klines, err := l.b.GetKlines()
-
 	if err != nil {
 		s.Send(errorMessage(err, "Draw GetKlines"))
+		return
+	}
+	f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
+	if err != nil {
+		s.Send(errorMessage(err, "Draw formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))"))
 		return
 	}
 
@@ -141,7 +147,7 @@ func (l *Logic) CommandDraw(s *Sender) {
 		s.Send(errorMessage(err, "Draw in p.DrawMainGraph(klines)"))
 		return
 	}
-
+	p.DrawFunction(f, klines.Max+math.Sqrt(klines.Max))
 	buffer, err := p.SaveToBuffer()
 	if err != nil {
 		s.Send(errorMessage(err, "Draw in p.SaveToBuffer()"))

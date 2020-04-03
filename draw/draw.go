@@ -46,12 +46,14 @@ func (AllPriceTicks) Ticks(min, max float64) []plot.Tick {
 	return tks
 }
 
+const secDay = 86400
+
 func MakeHorLine(x, y float64, r, g, b uint8) *plotter.Line {
 	pts := make(plotter.XYs, 2)
 	pts[0].Y = y
 	pts[1].Y = y
 	pts[0].X = x - 1000
-	pts[1].X = x + 86400 + 10000
+	pts[1].X = x + 2*secDay + 5000
 	line, _ := plotter.NewLine(pts)
 	line.Color = color.RGBA{
 		R: r,

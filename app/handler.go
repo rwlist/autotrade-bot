@@ -63,7 +63,7 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 	cmd := cmds[0]
 	switch cmd {
 	case "/draw":
-		h.commandDraw(chatID)
+		h.commandDraw(chatID, cmds[1])
 
 	case "/sell":
 		h.commandSell(chatID)
@@ -106,8 +106,8 @@ func (h *Handler) commandSell(chatID int) {
 	h.sendMessage(chatID, "Command \"/sell\" finished")
 }
 
-func (h *Handler) commandDraw(chatID int) {
-	h.logic.CommandDraw(&Sender{h.bot, chatID})
+func (h *Handler) commandDraw(chatID int, str string) {
+	h.logic.CommandDraw(&Sender{h.bot, chatID}, str)
 }
 
 func (h *Handler) commandNotFound(chatID int) {

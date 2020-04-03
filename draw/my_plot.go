@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"image/color"
 
+	"github.com/rwlist/autotrade-bot/formula"
+
 	"gonum.org/v1/plot"
 
 	"github.com/pplcc/plotext/custplotter"
@@ -29,6 +31,17 @@ func (p Plot) DrawHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
 	p.Plot.Add(MakeHorLine(startTime, lastPrice, 0, 0, 255))
 	p.Plot.Add(MakeHorLine(startTime, minPrice, 255, 0, 0))
 	p.Plot.Add(MakeHorLine(startTime, maxPrice, 0, 255, 0))
+}
+
+func (p Plot) DrawFunction(f formula.Formula, yMax float64) {
+	p.Plot.Y.Max = yMax
+	p.Plot.X.Max = f.Start() + secDay
+	fu := plotter.NewFunction(f.Calc)
+	fu.XMin = f.Start()
+	fu.XMax = f.Start() + secDay
+	fu.Width = 4
+	fu.Color = color.RGBA{R: 255, B: 0, G: 165, A: 255}
+	p.Plot.Add(fu)
 }
 
 func (p Plot) DrawMainGraph(klines Klines) error {
