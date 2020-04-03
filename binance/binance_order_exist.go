@@ -1,4 +1,4 @@
-package app
+package binance
 
 import "github.com/adshao/go-binance"
 

@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/adshao/go-binance"
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
-
 	"github.com/rwlist/autotrade-bot/app"
+	"github.com/rwlist/autotrade-bot/binance"
 	"github.com/rwlist/autotrade-bot/conf"
 )
 
@@ -40,12 +39,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cli := binance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret)
-	cli.Debug = true
-	logic := app.NewLogic(app.NewMyBinance(cli))
+	logic := app.NewLogic(binance.NewMyBinance(cfg.Binance, true))
 	handler := app.NewHandler(bot, logic, cfg)
 
 	for upd := range ch {
+		upd := upd
 		handler.Handle(&upd)
 	}
 }

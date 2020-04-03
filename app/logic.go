@@ -1,17 +1,21 @@
 package app
 
 import (
-	"fmt"
+	"math"
 	"time"
 
-	"github.com/adshao/go-binance"
+	"github.com/rwlist/autotrade-bot/draw"
+	"github.com/rwlist/autotrade-bot/formula"
+	"github.com/rwlist/autotrade-bot/tostr"
+
+	"github.com/rwlist/autotrade-bot/binance"
 )
 
 type Logic struct {
-	b *MyBinance
+	b *binance.MyBinance
 }
 
-func NewLogic(b *MyBinance) *Logic {
+func NewLogic(b *binance.MyBinance) *Logic {
 	return &Logic{
 		b: b,
 	}
@@ -43,17 +47,18 @@ func (l *Logic) CommandStatus() (*Status, error) {
 	var balances []*Balance
 	var total float64
 	for _, bal := range allBalances {
-		if isEmptyBalance(bal.Free) && isEmptyBalance(bal.Locked) {
+		if binance.IsEmptyBalance(bal.Free) && binance.IsEmptyBalance(bal.Locked) {
 			continue
 		}
 
+		bal := bal
 		balUSD, err := l.b.BalanceToUSD(&bal)
 		if err != nil {
 			return &Status{}, err
 		}
 		total += balUSD
 		resBal := &Balance{
-			usd:    float64ToStr(balUSD, 2),
+			usd:    tostr.Float64ToStr(balUSD, 2),
 			asset:  bal.Asset,
 			free:   bal.Free,
 			locked: bal.Locked,
@@ -62,33 +67,33 @@ func (l *Logic) CommandStatus() (*Status, error) {
 	}
 
 	res := &Status{
-		total:    float64ToStr(total, 2),
+		total:    tostr.Float64ToStr(total, 2),
 		rate:     rate,
 		balances: balances,
 	}
 	return res, err
 }
 
-const sleepDur = time.Duration(1) * time.Second
+const sleepDur = time.Second
 
 func (l *Logic) CommandBuy(s *Sender) {
 	for i := 0; i < 5; i++ {
 		orderNew, err := l.b.BuyAll()
 		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeBuy))
+			s.Send(errorMessage(err, "Buy-BuyAll"))
 			return
 		}
-		s.Send(startMessage(&OrderNew{orderNew}))
+		s.Send(startMessage(orderNew))
 		time.Sleep(sleepDur)
-		order, err := l.b.GetOrder(orderNew.OrderID)
+		order, err := l.b.GetOrder(orderNew.OrderID())
 		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeBuy))
+			s.Send(errorMessage(err, "Buy-GetOrder"))
 			return
 		}
-		s.Send(orderStatusMessage(&OrderExist{order}))
-		err = l.b.CancelOrder(order.OrderID)
+		s.Send(orderStatusMessage(order))
+		err = l.b.CancelOrder(order.OrderID())
 		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeBuy))
+			s.Send(errorMessage(err, "Buy-CancelOrder"))
 			return
 		}
 	}
@@ -98,36 +103,59 @@ func (l *Logic) CommandSell(s *Sender) {
 	for i := 0; i < 5; i++ {
 		orderNew, err := l.b.SellAll()
 		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeSell))
+			s.Send(errorMessage(err, "Sell-BuyAll"))
 			return
 		}
-		s.Send(startMessage(&OrderNew{orderNew}))
+		s.Send(startMessage(orderNew))
 		time.Sleep(sleepDur)
-		order, err := l.b.GetOrder(orderNew.OrderID)
+		order, err := l.b.GetOrder(orderNew.OrderID())
 		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeSell))
+			s.Send(errorMessage(err, "Sell-GetOrder"))
 			return
 		}
-		s.Send(orderStatusMessage(&OrderExist{order}))
-		err = l.b.CancelOrder(order.OrderID)
+		s.Send(orderStatusMessage(order))
+		err = l.b.CancelOrder(order.OrderID())
 		if err != nil {
-			s.Send(errorMessage(err, binance.SideTypeSell))
+			s.Send(errorMessage(err, "Sell-CancelOrder"))
 			return
 		}
 	}
 }
 
-//--------------------------------------TEMPLATES FOR SENDER----------------------------------------------
-func errorMessage(err error, side binance.SideType) string {
-	return fmt.Sprintf("Error while %v:\n\n%s", side, err)
-}
+func (l *Logic) CommandDraw(s *Sender, str string) {
+	klines, err := l.b.GetKlines()
+	if err != nil {
+		s.Send(errorMessage(err, "Draw GetKlines"))
+		return
+	}
+	f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
+	if err != nil {
+		s.Send(errorMessage(err, "Draw formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))"))
+		return
+	}
 
-func startMessage(order Order) string {
-	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for %s", order.Side(), order.Price(), sleepDur)
-}
+	p, err := draw.NewPlot()
+	if err != nil {
+		s.Send(errorMessage(err, "Draw in plot.New()"))
+		return
+	}
 
-func orderStatusMessage(order Order) string {
-	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side(), order.ExecutedQuantity(), order.OrigQuantity(), order.Status())
+	p.DrawEnv()
+	p.DrawHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
+	err = p.DrawMainGraph(klines)
+	if err != nil {
+		s.Send(errorMessage(err, "Draw in p.DrawMainGraph(klines)"))
+		return
+	}
+	p.DrawFunction(f, klines.Max+math.Sqrt(klines.Max))
+	buffer, err := p.SaveToBuffer()
+	if err != nil {
+		s.Send(errorMessage(err, "Draw in p.SaveToBuffer()"))
+		return
+	}
+	err = s.SendPhoto("graph.png", buffer.Bytes())
+	if err != nil {
+		s.Send(errorMessage(err, "Draw in s.SendPhoto(\"graph.png\", buffer.Bytes())"))
+		return
+	}
 }
-
-//-------------------------------------------------------------------------------

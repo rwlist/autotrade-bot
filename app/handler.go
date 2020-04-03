@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rwlist/autotrade-bot/tostr"
+
 	"github.com/petuhovskiy/telegram"
 
 	"github.com/rwlist/autotrade-bot/conf"
@@ -38,7 +40,7 @@ func (h *Handler) Handle(upd *telegram.Update) {
 
 func (h *Handler) sendMessage(chatID int, text string) {
 	_, _ = h.bot.SendMessage(&telegram.SendMessageRequest{
-		ChatID: str(chatID),
+		ChatID: tostr.Str(chatID),
 		Text:   text,
 	})
 }
@@ -60,6 +62,9 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 
 	cmd := cmds[0]
 	switch cmd {
+	case "/draw":
+		h.commandDraw(chatID, cmds[1])
+
 	case "/sell":
 		h.commandSell(chatID)
 
@@ -101,6 +106,10 @@ func (h *Handler) commandSell(chatID int) {
 	h.sendMessage(chatID, "Command \"/sell\" finished")
 }
 
+func (h *Handler) commandDraw(chatID int, str string) {
+	h.logic.CommandDraw(&Sender{h.bot, chatID}, str)
+}
+
 func (h *Handler) commandNotFound(chatID int) {
 	h.commandHelp(chatID)
 }
@@ -108,7 +117,11 @@ func (h *Handler) commandNotFound(chatID int) {
 func (h *Handler) commandHelp(chatID int) {
 	str := `Need some help?
 
-/status				displays btc/usdt rate and your binance wallet balance`
+/status				displays BTC/USDT rate and your binance wallet balance
+/sell				sells all BTC
+/buy				buys BTC with all USDT
+/draw rate-10+0.0002*(now-start)^1.2
+`
 
 	h.sendMessage(chatID, str)
 }
