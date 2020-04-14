@@ -34,8 +34,11 @@ func (p Plot) DrawHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
 }
 
 func (p Plot) DrawFunction(f formula.Formula, yMax float64) {
-	p.Plot.Y.Max = yMax
 	p.Plot.X.Max = f.Start() + secDay
+	if yMax == -1 {
+		yMax = f.Calc(f.Start() + secDay)
+	}
+	p.Plot.Y.Max = yMax
 	fu := plotter.NewFunction(f.Calc)
 	fu.XMin = f.Start()
 	fu.XMax = f.Start() + secDay

@@ -6,8 +6,8 @@ import (
 	"github.com/rwlist/autotrade-bot/binance"
 )
 
-func errorMessage(err error, command string) string {
-	return fmt.Sprintf("Error while %v:\n\n%s", command, err)
+func errorMessage(err error, str string) string {
+	return fmt.Sprintf("Error while %v:\n\n%s", str, err)
 }
 
 func startMessage(order binance.Order) string {

@@ -14,6 +14,11 @@ func Str64(id int64) string {
 	return fmt.Sprintf("%v", id)
 }
 
+func Atoi64(str string) int64 {
+	res, _ := strconv.ParseInt(str, 10, 64)
+	return res
+}
+
 func Float64ToStr(f float64, d int) string {
 	return fmt.Sprintf("%f", Round(f, d))
 }
