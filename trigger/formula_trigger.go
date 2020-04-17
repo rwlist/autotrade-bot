@@ -1,7 +1,7 @@
 package trigger
 
 import (
-	"sync"
+	"fmt"
 	"time"
 
 	"github.com/rwlist/autotrade-bot/binance"
@@ -11,49 +11,68 @@ import (
 
 type FormulaTrigger struct {
 	active  bool
-	resp    chan *Response
+	Resp    chan *Response
 	quit    chan struct{}
 	b       binance.MyBinance
 	formula formula.Formula
+	haveBTC float64
 }
 
-func NewTrigger(b binance.MyBinance) FormulaTrigger {
-	var resp chan *Response
-	var quit chan struct{}
+func NewTrigger(b binance.MyBinance, haveBTC float64) FormulaTrigger {
 	return FormulaTrigger{
-		active: false,
-		resp:   resp,
-		quit:   quit,
-		b:      b,
+		active:  false,
+		Resp:    make(chan *Response),
+		quit:    make(chan struct{}),
+		b:       b,
+		haveBTC: haveBTC,
 	}
 }
 
 type Response struct {
-	rate       float64
-	prediction float64
-	err        error
+	CurRate     float64
+	FormulaRate float64
+	AbsDif      float64
+	RelDif      float64
+	StartRate   float64
+	AbsProfit   float64
+	RelProfit   float64
+	err         error
+}
+
+func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
+	absDif := curRate - fRate
+	relDif := absDif / fRate
+	d := curRate - ft.formula.Rate()
+	relProf := d / ft.formula.Rate()
+	absProf := d * ft.haveBTC
+	return &Response{
+		CurRate:     curRate,
+		FormulaRate: fRate,
+		AbsDif:      absDif,
+		RelDif:      relDif,
+		StartRate:   ft.formula.Rate(),
+		AbsProfit:   absProf,
+		RelProfit:   relProf,
+	}
 }
 
 const timeSleep = 10 * time.Second
 
-func (ft *FormulaTrigger) CheckLoop(wg *sync.WaitGroup) {
-	defer wg.Done()
+func (ft *FormulaTrigger) CheckLoop() {
 	for {
 		select {
 		case <-ft.quit:
 			return
+
 		default:
 			t := float64(time.Now().Unix())
 			rate, err := ft.b.GetRate()
 			if err != nil {
-				ft.resp <- &Response{
+				ft.Resp <- &Response{
 					err: err,
 				}
 			}
-			ft.resp <- &Response{
-				rate:       tostr.StrToFloat64(rate),
-				prediction: ft.formula.Calc(t),
-			}
+			ft.Resp <- ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(t))
 			time.Sleep(timeSleep)
 		}
 	}
@@ -62,8 +81,6 @@ func (ft *FormulaTrigger) CheckLoop(wg *sync.WaitGroup) {
 func (ft *FormulaTrigger) Begin(f formula.Formula) {
 	ft.active = true
 	ft.formula = f
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go ft.CheckLoop(&wg)
-	wg.Wait()
+	go ft.CheckLoop()
+	fmt.Println("pzdc")
 }

@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"github.com/rwlist/autotrade-bot/trigger"
+
 	"github.com/rwlist/autotrade-bot/binance"
 )
 
@@ -16,4 +18,11 @@ func startMessage(order binance.Order) string {
 
 func orderStatusMessage(order binance.Order) string {
 	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side(), order.ExecutedQuantity(), order.OrigQuantity(), order.Status())
+}
+
+func triggerResponseMessage(resp *trigger.Response) string {
+	return fmt.Sprintf("Current rate: %v\nFormula rate: %.2f\n\n"+
+		"Absolute difference: %.2f\nRelative difference: %.2f%%\n\n"+
+		"Start rate: %v\nRelative profit: %.2f%%\nAbsolute profit: %.2f",
+		resp.CurRate, resp.FormulaRate, resp.AbsDif, resp.RelDif, resp.StartRate, resp.RelProfit, resp.AbsProfit)
 }
