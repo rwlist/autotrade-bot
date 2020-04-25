@@ -4,10 +4,9 @@ import (
 	"math"
 	"testing"
 
+	"github.com/rwlist/autotrade-bot/draw"
 	"github.com/rwlist/autotrade-bot/formula"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/rwlist/autotrade-bot/draw"
 )
 
 func TestDraw(t *testing.T) {
@@ -16,10 +15,10 @@ func TestDraw(t *testing.T) {
 	assert.Nil(t, err)
 	p, err := draw.NewPlot()
 	assert.Nil(t, err)
-	p.DrawEnv()
-	p.DrawHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
-	err = p.DrawMainGraph(klines)
-	p.DrawFunction(f, klines.Max+1.7*math.Sqrt(klines.Max))
+	p.AddEnv()
+	p.AddHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
+	err = p.AddRateGraph(klines)
+	p.AddFunction(f, klines.Max+1.7*math.Sqrt(klines.Max))
 	assert.Nil(t, err)
 	err = p.Plot.Save(draw.DefaultWidth, draw.DefaultHeight, "plot.png")
 	assert.Nil(t, err)

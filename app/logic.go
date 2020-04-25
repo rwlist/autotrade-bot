@@ -14,7 +14,8 @@ import (
 )
 
 type Logic struct {
-	b *binance.MyBinance
+	b  *binance.MyBinance
+	ft trigger.FormulaTrigger
 }
 
 func NewLogic(b *binance.MyBinance) *Logic {
@@ -124,15 +125,10 @@ func (l *Logic) CommandSell(s *Sender) {
 	}
 }
 
-func (l *Logic) CommandDraw(s *Sender, str string) {
+func (l *Logic) CommandDraw(s *Sender, str string, optF formula.Formula) {
 	klines, err := l.b.GetKlines()
 	if err != nil {
 		s.Send(errorMessage(err, "Draw GetKlines"))
-		return
-	}
-	f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
-	if err != nil {
-		s.Send(errorMessage(err, "Draw formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))"))
 		return
 	}
 
@@ -142,14 +138,25 @@ func (l *Logic) CommandDraw(s *Sender, str string) {
 		return
 	}
 
-	p.DrawEnv()
-	p.DrawHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
-	err = p.DrawMainGraph(klines)
+	p.AddEnv()
+
+	p.AddHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
+
+	err = p.AddRateGraph(klines)
 	if err != nil {
-		s.Send(errorMessage(err, "Draw in p.DrawMainGraph(klines)"))
+		s.Send(errorMessage(err, "Draw in p.AddRateGraph(klines)"))
 		return
 	}
-	p.DrawFunction(f, klines.Max+math.Sqrt(klines.Max))
+	if optF == nil {
+		f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
+		if err != nil {
+			s.Send(errorMessage(err, "Draw formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))"))
+			return
+		}
+		p.AddFunction(f, klines.Max+math.Sqrt(klines.Max))
+	} else {
+		p.AddFunction(optF, klines.Max+math.Sqrt(klines.Max))
+	}
 	buffer, err := p.SaveToBuffer()
 	if err != nil {
 		s.Send(errorMessage(err, "Draw in p.SaveToBuffer()"))
@@ -166,12 +173,12 @@ func (l *Logic) CommandBegin(s *Sender, str string, isTest bool) {
 	if !isTest {
 		l.CommandBuy(s)
 	}
-	haveBTC, err := l.b.AccountSymbolBalance("BTC")
+	var err error
+	l.ft, err = trigger.NewTrigger(*l.b)
 	if err != nil {
-		s.Send(errorMessage(err, "CommandBegin l.b.AccountSymbolBalance(\"BTC\")"))
+		s.Send(errorMessage(err, "CommandBegin trigger.NewTrigger(*l.b)"))
 		return
 	}
-	ft := trigger.NewTrigger(*l.b, haveBTC)
 	rate, err := l.b.GetRate()
 	if err != nil {
 		s.Send(errorMessage(err, "CommandBegin l.b.GetRate()"))
@@ -182,11 +189,12 @@ func (l *Logic) CommandBegin(s *Sender, str string, isTest bool) {
 		s.Send(errorMessage(err, "CommandBegin formula.NewBasic(...)"))
 		return
 	}
-	ft.Begin(f)
+	l.ft.Begin(f)
 	var cnt, period int64 = 0, 30
-	for val := range ft.Resp {
+	for val := range l.ft.Resp {
 		if cnt%period == 0 {
 			s.Send(triggerResponseMessage(val))
+			l.CommandDraw(s, "", f)
 		}
 		if val.RelDif < 1 {
 			period = 6
@@ -195,4 +203,12 @@ func (l *Logic) CommandBegin(s *Sender, str string, isTest bool) {
 		}
 		cnt++
 	}
+}
+
+func (l *Logic) CommandEnd(s *Sender, isTest bool) {
+	if !isTest {
+		l.CommandSell(s)
+	}
+	l.ft.End()
+	s.Send("trigger OFF")
 }

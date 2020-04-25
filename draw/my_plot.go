@@ -21,19 +21,19 @@ func NewPlot() (Plot, error) {
 	return Plot{p}, err
 }
 
-func (p Plot) DrawEnv() {
+func (p Plot) AddEnv() {
 	p.Plot.X.Tick.Marker = AllTimeTicks{}
 	p.Plot.Y.Tick.Marker = AllPriceTicks{}
 	p.Plot.Add(plotter.NewGrid())
 }
 
-func (p Plot) DrawHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
+func (p Plot) AddHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
 	p.Plot.Add(MakeHorLine(startTime, lastPrice, 0, 0, 255))
 	p.Plot.Add(MakeHorLine(startTime, minPrice, 255, 0, 0))
 	p.Plot.Add(MakeHorLine(startTime, maxPrice, 0, 255, 0))
 }
 
-func (p Plot) DrawFunction(f formula.Formula, yMax float64) {
+func (p Plot) AddFunction(f formula.Formula, yMax float64) {
 	p.Plot.X.Max = f.Start() + secDay
 	if yMax == -1 {
 		yMax = f.Calc(f.Start() + secDay)
@@ -47,7 +47,7 @@ func (p Plot) DrawFunction(f formula.Formula, yMax float64) {
 	p.Plot.Add(fu)
 }
 
-func (p Plot) DrawMainGraph(klines Klines) error {
+func (p Plot) AddRateGraph(klines Klines) error {
 	bars, err := custplotter.NewCandlesticks(klines)
 	if err != nil {
 		return err

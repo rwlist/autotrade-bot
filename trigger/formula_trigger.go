@@ -1,7 +1,6 @@
 package trigger
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/rwlist/autotrade-bot/binance"
@@ -18,14 +17,18 @@ type FormulaTrigger struct {
 	haveBTC float64
 }
 
-func NewTrigger(b binance.MyBinance, haveBTC float64) FormulaTrigger {
+func NewTrigger(b binance.MyBinance) (FormulaTrigger, error) {
+	haveBTC, err := b.AccountSymbolBalance("BTC")
+	if err != nil {
+		haveBTC = 0
+	}
 	return FormulaTrigger{
 		active:  false,
 		Resp:    make(chan *Response),
 		quit:    make(chan struct{}),
 		b:       b,
 		haveBTC: haveBTC,
-	}
+	}, err
 }
 
 type Response struct {
@@ -82,5 +85,9 @@ func (ft *FormulaTrigger) Begin(f formula.Formula) {
 	ft.active = true
 	ft.formula = f
 	go ft.CheckLoop()
-	fmt.Println("pzdc")
+}
+
+func (ft *FormulaTrigger) End() {
+	ft.active = false
+	ft.quit <- struct{}{}
 }
