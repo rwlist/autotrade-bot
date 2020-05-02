@@ -150,4 +150,3 @@ func (b *MyBinance) GetKlines() (draw.Klines, error) {
 func sum(str1, str2 string) float64 {
 	return tostr.StrToFloat64(str1) + tostr.StrToFloat64(str2)
 }
-

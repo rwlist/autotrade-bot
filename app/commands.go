@@ -33,6 +33,8 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 }
 
 func (h *Handler) commandStatus(chatID int) {
+	const places = 2
+
 	status, err := h.svc.Status.Status()
 	if err != nil {
 		text := fmt.Sprintf("Error while status:\n\n%s", err)
@@ -41,7 +43,7 @@ func (h *Handler) commandStatus(chatID int) {
 	}
 
 	res := fmt.Sprintf("BTC: 1 ≈ %v USDT \n", status.Rate)
-	res += fmt.Sprintf("Total in USD ≈ %v $ \n\n", status.Total.RoundBank(2))
+	res += fmt.Sprintf("Total in USD ≈ %v $ \n\n", status.Total.RoundBank(places))
 	res += "Wallet balance:"
 
 	if len(status.Balances) == 0 {
@@ -50,7 +52,7 @@ func (h *Handler) commandStatus(chatID int) {
 
 	for _, v := range status.Balances {
 		res += fmt.Sprintf("\n%v:\n", v.Asset)
-		res += fmt.Sprintf("In USD: %v$\n", v.USD.RoundBank(2))
+		res += fmt.Sprintf("In USD: %v$\n", v.USD.RoundBank(places))
 		res += fmt.Sprintf("Free: %v\n", v.Free)
 		res += fmt.Sprintf("Locked: %v\n", v.Locked)
 	}

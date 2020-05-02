@@ -1,8 +1,9 @@
 package app
 
 import (
-	"github.com/rwlist/autotrade-bot/app/stat"
 	"strings"
+
+	"github.com/rwlist/autotrade-bot/app/stat"
 
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
 

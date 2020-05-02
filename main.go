@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/rwlist/autotrade-bot/app/stat"
 	"log"
+
+	"github.com/rwlist/autotrade-bot/app/stat"
 
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
