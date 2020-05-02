@@ -3,9 +3,9 @@ package trigger
 import (
 	"time"
 
-	"github.com/rwlist/autotrade-bot/binance"
-	"github.com/rwlist/autotrade-bot/formula"
-	"github.com/rwlist/autotrade-bot/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/formula"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
+	"github.com/rwlist/autotrade-bot/trade/binance"
 )
 
 type FormulaTrigger struct {

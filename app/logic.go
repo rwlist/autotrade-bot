@@ -4,13 +4,13 @@ import (
 	"math"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/trigger"
+	"github.com/rwlist/autotrade-bot/trade/trigger"
 
-	"github.com/rwlist/autotrade-bot/draw"
-	"github.com/rwlist/autotrade-bot/formula"
-	"github.com/rwlist/autotrade-bot/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/formula"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
+	"github.com/rwlist/autotrade-bot/trade/draw"
 
-	"github.com/rwlist/autotrade-bot/binance"
+	"github.com/rwlist/autotrade-bot/trade/binance"
 )
 
 type Logic struct {
@@ -22,59 +22,6 @@ func NewLogic(b *binance.MyBinance) *Logic {
 	return &Logic{
 		b: b,
 	}
-}
-
-type Balance struct {
-	usd    string
-	asset  string
-	free   string
-	locked string
-}
-
-type Status struct {
-	total    string
-	rate     string
-	balances []*Balance
-}
-
-func (l *Logic) CommandStatus() (*Status, error) {
-	rate, err := l.b.GetRate()
-	if err != nil {
-		return nil, err
-	}
-	allBalances, err := l.b.AccountBalance()
-	if err != nil {
-		return nil, err
-	}
-
-	var balances []*Balance
-	var total float64
-	for _, bal := range allBalances {
-		if binance.IsEmptyBalance(bal.Free) && binance.IsEmptyBalance(bal.Locked) {
-			continue
-		}
-
-		bal := bal
-		balUSD, err := l.b.BalanceToUSD(&bal)
-		if err != nil {
-			return &Status{}, err
-		}
-		total += balUSD
-		resBal := &Balance{
-			usd:    tostr.Float64ToStr(balUSD, 2),
-			asset:  bal.Asset,
-			free:   bal.Free,
-			locked: bal.Locked,
-		}
-		balances = append(balances, resBal)
-	}
-
-	res := &Status{
-		total:    tostr.Float64ToStr(total, 2),
-		rate:     rate,
-		balances: balances,
-	}
-	return res, err
 }
 
 const sleepDur = time.Second
@@ -176,12 +123,12 @@ func (l *Logic) CommandBegin(s *Sender, str string, isTest bool) {
 	var err error
 	l.ft, err = trigger.NewTrigger(*l.b)
 	if err != nil {
-		s.Send(errorMessage(err, "CommandBegin trigger.NewTrigger(*l.b)"))
+		s.Send(errorMessage(err, "CommandBegin trigger.NewTrigger(*l.myBinance)"))
 		return
 	}
 	rate, err := l.b.GetRate()
 	if err != nil {
-		s.Send(errorMessage(err, "CommandBegin l.b.GetRate()"))
+		s.Send(errorMessage(err, "CommandBegin l.myBinance.GetRate()"))
 		return
 	}
 	f, err := formula.NewBasic(str, tostr.StrToFloat64(rate), float64(time.Now().Unix()))

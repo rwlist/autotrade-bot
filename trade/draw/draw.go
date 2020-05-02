@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"

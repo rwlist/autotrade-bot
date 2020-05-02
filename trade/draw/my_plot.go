@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"image/color"
 
-	"github.com/rwlist/autotrade-bot/formula"
+	"github.com/rwlist/autotrade-bot/pkg/formula"
 
 	"gonum.org/v1/plot"
 

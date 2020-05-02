@@ -3,9 +3,9 @@ package app
 import (
 	"fmt"
 
-	"github.com/rwlist/autotrade-bot/trigger"
+	"github.com/rwlist/autotrade-bot/trade/trigger"
 
-	"github.com/rwlist/autotrade-bot/binance"
+	"github.com/rwlist/autotrade-bot/trade/binance"
 )
 
 func errorMessage(err error, str string) string {

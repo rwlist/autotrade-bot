@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/rwlist/autotrade-bot/app/stat"
 	"log"
 
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
 	"github.com/rwlist/autotrade-bot/app"
-	"github.com/rwlist/autotrade-bot/binance"
-	"github.com/rwlist/autotrade-bot/conf"
+	"github.com/rwlist/autotrade-bot/pkg/conf"
+	"github.com/rwlist/autotrade-bot/trade/binance"
 )
 
 func main() {
@@ -39,8 +40,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logic := app.NewLogic(binance.NewMyBinance(cfg.Binance, true))
-	handler := app.NewHandler(bot, logic, cfg)
+	myBinance := binance.NewMyBinance(cfg.Binance, cfg.Binance.Debug)
+
+	handler := app.NewHandler(
+		bot,
+		cfg,
+		app.Services{
+			Logic:  app.NewLogic(myBinance),
+			Status: stat.New(myBinance),
+		},
+	)
 
 	for upd := range ch {
 		upd := upd

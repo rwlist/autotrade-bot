@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/rwlist/autotrade-bot/draw"
-	"github.com/rwlist/autotrade-bot/formula"
+	"github.com/rwlist/autotrade-bot/pkg/formula"
+	"github.com/rwlist/autotrade-bot/trade/draw"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/petuhovskiy/telegram"
-	"github.com/rwlist/autotrade-bot/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
 )
 
 type Sender struct {

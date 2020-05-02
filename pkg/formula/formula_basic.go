@@ -5,7 +5,7 @@ import (
 	"math"
 	"regexp"
 
-	"github.com/rwlist/autotrade-bot/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
 )
 
 const patternFloat string = `[0-9]+\.?[0-9]*`

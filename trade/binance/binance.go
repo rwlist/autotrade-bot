@@ -3,13 +3,12 @@ package binance
 import (
 	"context"
 	"math"
-	"strings"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/draw"
-	"github.com/rwlist/autotrade-bot/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
+	"github.com/rwlist/autotrade-bot/trade/draw"
 
-	"github.com/rwlist/autotrade-bot/conf"
+	"github.com/rwlist/autotrade-bot/pkg/conf"
 
 	"github.com/adshao/go-binance"
 )
@@ -152,6 +151,3 @@ func sum(str1, str2 string) float64 {
 	return tostr.StrToFloat64(str1) + tostr.StrToFloat64(str2)
 }
 
-func IsEmptyBalance(str string) bool {
-	return strings.Trim(str, ".0") == ""
-}
