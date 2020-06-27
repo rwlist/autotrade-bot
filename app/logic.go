@@ -143,6 +143,11 @@ func (l *Logic) CommandBegin(s *Sender, str string, isTest bool) {
 			s.Send(triggerResponseMessage(val))
 			l.CommandDraw(s, "", f)
 		}
+		if val.AbsDif < 0 {
+			s.Send(triggerResponseMessage(val))
+			l.CommandEnd(s, isTest)
+			return
+		}
 		if val.RelDif < 1 {
 			period = 6
 		} else {

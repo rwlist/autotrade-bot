@@ -9,6 +9,9 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 
 	cmd := cmds[0]
 	switch cmd {
+	case "/testSwitch":
+		h.commandTestModeSwitch(chatID)
+
 	case "/end":
 		h.commandEnd(chatID)
 
@@ -74,18 +77,25 @@ func (h *Handler) commandDraw(chatID int, str string) {
 	h.svc.Logic.CommandDraw(&Sender{h.bot, chatID}, str, nil)
 }
 
-const isTest = true
-
 func (h *Handler) commandBegin(chatID int, str string) {
-	go h.svc.Logic.CommandBegin(&Sender{h.bot, chatID}, str, isTest)
+	go h.svc.Logic.CommandBegin(&Sender{h.bot, chatID}, str, h.isTest)
 }
 
 func (h *Handler) commandEnd(chatID int) {
-	h.svc.Logic.CommandEnd(&Sender{h.bot, chatID}, isTest)
+	h.svc.Logic.CommandEnd(&Sender{h.bot, chatID}, h.isTest)
 }
 
 func (h *Handler) commandNotFound(chatID int) {
 	h.commandHelp(chatID)
+}
+
+func (h *Handler) commandTestModeSwitch(chatID int) {
+	h.isTest = !h.isTest
+	if h.isTest {
+		h.sendMessage(chatID, "Testmode is ON!")
+	} else {
+		h.sendMessage(chatID, "Testmode is OFF!\nNow, be careful")
+	}
 }
 
 func (h *Handler) commandHelp(chatID int) {
