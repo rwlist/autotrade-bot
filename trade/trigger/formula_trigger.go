@@ -68,14 +68,14 @@ func (ft *FormulaTrigger) CheckLoop() {
 			return
 
 		default:
-			t := float64(time.Now().Unix())
+			t := time.Now().Unix()
 			rate, err := ft.b.GetRate()
 			if err != nil {
 				ft.Resp <- &Response{
 					err: err,
 				}
 			}
-			ft.Resp <- ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(t))
+			ft.Resp <- ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(float64(t)))
 			time.Sleep(timeSleep)
 		}
 	}

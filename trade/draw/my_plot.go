@@ -42,7 +42,7 @@ func (p Plot) AddFunction(f formula.Formula, yMax float64) {
 	fu := plotter.NewFunction(f.Calc)
 	fu.XMin = f.Start()
 	fu.XMax = f.Start() + secDay
-	fu.Width = 4
+	fu.Width = 2
 	fu.Color = color.RGBA{R: 255, B: 0, G: 165, A: 255}
 	p.Plot.Add(fu)
 }
@@ -53,17 +53,19 @@ func (p Plot) AddRateGraph(klines Klines) error {
 		return err
 	}
 	bars.ColorUp = color.RGBA{
-		R: 0,
-		G: 255,
-		B: 0,
+		R: 2,
+		G: 192,
+		B: 118,
 		A: 255,
 	}
 	bars.ColorDown = color.RGBA{
-		R: 255,
-		G: 0,
-		B: 0,
+		R: 217,
+		G: 48,
+		B: 78,
 		A: 255,
 	}
+	bars.FixedLineColor = false
+	bars.Width = 1
 	p.Plot.Add(bars)
 	return nil
 }

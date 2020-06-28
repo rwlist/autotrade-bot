@@ -1,7 +1,16 @@
 package formula
 
+/*
+	Интерфейс описывает функцию от одной переменной now с заданными парамтерами start и rate
+ 	По смыслу start и rate задают время активации триггера и начальный курс
+	now - текущее время
+	Для start и now используется формат time.Unix
+ 	Пример: rate-10+0.0002*(now-start)^1.2
+
+	now float64 - это костыль для построения графика, пока нет возможности с этим что-то сделать
+*/
 type Formula interface {
-	Calc(now float64) float64
-	Start() float64
-	Rate() float64
+	Calc(now float64) float64 // Возвращает значение в точке now
+	Start() float64           // Возвращает значение параметра start
+	Rate() float64            // Возвращает значение параметра rate
 }

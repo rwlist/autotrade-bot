@@ -106,9 +106,9 @@ func (h *Handler) commandHelp(chatID int) {
 /sell				sells all BTC
 /buy				buys BTC with all USDT
 
-/draw rate-10+0.0002*(now-start)^1.2
-/begin  TODO
-/end    TODO
+/draw <formula> (example: rate-10+0.0002*(now-start)^1.2) 		draws graph of given formula
+/begin <formula> buys BTC with all USDT, activates trigger 
+/end    deactivates trigger and sells all BTC
 /drawit TBD
 `
 

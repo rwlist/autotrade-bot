@@ -17,19 +17,11 @@ func (AllTimeTicks) Ticks(min, max float64) []plot.Tick {
 	tks := plot.DefaultTicks{}.Ticks(min, max)
 	for i, t := range tks {
 		ut := time.Unix(int64(t.Value), 0)
-		d := tostr.Str(ut.Day())
-		h := tostr.Str(ut.Hour())
-		m := tostr.Str(ut.Minute())
-		if len(d) == 1 {
-			d = "0" + d
-		}
-		if len(h) == 1 {
-			h = "0" + h
-		}
-		if len(m) == 1 {
-			m = "0" + m
-		}
-		tks[i].Label = fmt.Sprintf("%v.%v\n%v:%v", d, ut.Month(), h, m)
+		d := ut.Format("02")
+		mon := ut.Format("01")
+		h := ut.Format("15")
+		m := ut.Format("04")
+		tks[i].Label = fmt.Sprintf("%v.%v\n%v:%v", d, mon, h, m)
 	}
 	return tks
 }

@@ -8,14 +8,20 @@ import (
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
 )
 
-const patternFloat string = `[0-9]+\.?[0-9]*`
-const patternBasic string = `(rate)-[0-9]+\.?[0-9]*\+[0-9]+\.?[0-9]*\*\((now)-(start)\)\^[0-9]+\.?[0-9]*`
+const patternFloat = `[0-9]+\.?[0-9]*`
+const patternBasic = `(rate)-[0-9]+\.?[0-9]*\+[0-9]+\.?[0-9]*\*\((now)-(start)\)\^[0-9]+\.?[0-9]*`
 
+/*
+	Базовая функция удовлетворяющая интерфейсу Formula
+	Имеет вид rate-10+0.0002*(now-start)^1.2
+	Парсится через regexp patternBasic
+*/
 type Basic struct {
-	rate, start float64
-	Coef        []float64
+	rate, start float64   // значения rate и start
+	Coef        []float64 // Числовые коэффициенты
 }
 
+// Calc(now) Вычисляет значение в точке now
 func (f *Basic) Calc(now float64) float64 {
 	return f.Rate() - f.Coef[0] + f.Coef[1]*math.Pow(now-f.Start(), f.Coef[2])
 }
@@ -30,6 +36,10 @@ func (f *Basic) Rate() float64 {
 
 const cntCoef = 3
 
+/*
+	По заданной строке определяется является ли она формулой этого вида
+	Создаёт и возвращает указатель на структуру, если да
+*/
 func NewBasic(s string, rate, start float64) (*Basic, error) {
 	re := regexp.MustCompile(patternBasic)
 	s = re.FindString(s)

@@ -94,15 +94,17 @@ func (l *Logic) CommandDraw(s *Sender, str string, optF formula.Formula) {
 		s.Send(errorMessage(err, "Draw in p.AddRateGraph(klines)"))
 		return
 	}
+
+	yMax := klines.Max + math.Sqrt(klines.Max)
 	if optF == nil {
 		f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
 		if err != nil {
 			s.Send(errorMessage(err, "Draw formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))"))
 			return
 		}
-		p.AddFunction(f, klines.Max+math.Sqrt(klines.Max))
+		p.AddFunction(f, yMax)
 	} else {
-		p.AddFunction(optF, klines.Max+math.Sqrt(klines.Max))
+		p.AddFunction(optF, yMax)
 	}
 	buffer, err := p.SaveToBuffer()
 	if err != nil {

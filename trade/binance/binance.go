@@ -118,7 +118,7 @@ const hday = 24
 func (b *MyBinance) GetKlines() (draw.Klines, error) {
 	klines, err := b.client.
 		NewKlinesService().Symbol("BTCUSDT").
-		Interval("30m").
+		Interval("15m").
 		StartTime(int64(timeShift) * (time.Now().Add(-time.Hour * hday).Unix())).
 		Do(context.Background())
 	if err != nil {
