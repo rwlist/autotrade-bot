@@ -17,12 +17,20 @@ type MyBinance struct {
 	client *binance.Client
 }
 
+/*
+	Создаёт новый MyBinance
+*/
 func NewMyBinance(cfg conf.Binance, debug bool) *MyBinance {
 	cli := binance.NewClient(cfg.APIKey, cfg.Secret)
 	cli.Debug = debug
 	return &MyBinance{cli}
 }
 
+/*
+	Возвращает информацию по балансу пользователя
+	Вернулась ли информация по конкретной валюте непонятно от чего зависит
+	Возможно возвращается для когда-либо использованных пользователем валют
+*/
 func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
 	info, err := b.client.NewGetAccountService().Do(context.Background())
 	if err != nil {
@@ -31,6 +39,9 @@ func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
 	return info.Balances, err
 }
 
+/*
+	Возвращает баланс для конкретной валюты
+*/
 func (b *MyBinance) AccountSymbolBalance(symbol string) (float64, error) {
 	info, err := b.client.NewGetAccountService().Do(context.Background())
 	if err != nil {
@@ -44,6 +55,9 @@ func (b *MyBinance) AccountSymbolBalance(symbol string) (float64, error) {
 	return 0, nil
 }
 
+/*
+	Получает баланс какой-то валюты, смотрит на курс валюты к USDT и возвращает баланс в USDT
+*/
 func (b *MyBinance) BalanceToUSD(bal *binance.Balance) (float64, error) {
 	haveFree := tostr.StrToFloat64(bal.Free)
 	haveLocked := tostr.StrToFloat64(bal.Locked)
@@ -61,6 +75,9 @@ func (b *MyBinance) BalanceToUSD(bal *binance.Balance) (float64, error) {
 	return haveFree + haveLocked, nil
 }
 
+/*
+	Возвращает текущий курс BTC/USDT
+*/
 func (b *MyBinance) GetRate() (string, error) {
 	symbolPrice, err := b.client.NewListPricesService().Symbol("BTCUSDT").Do(context.Background())
 	if err != nil {
@@ -69,7 +86,10 @@ func (b *MyBinance) GetRate() (string, error) {
 	return symbolPrice[0].Price, nil
 }
 
-func (b *MyBinance) BuyAll() (Order, error) {
+/*
+	Закупается BTC на все USDT
+*/
+func (b *MyBinance) BuyAll() (*Order, error) {
 	price, err := b.GetRate()
 	if err != nil {
 		return nil, err
@@ -82,10 +102,13 @@ func (b *MyBinance) BuyAll() (Order, error) {
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
 		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
-	return &OrderNew{order}, err
+	return convertCreateOrderResponseToOrder(order), err
 }
 
-func (b *MyBinance) SellAll() (Order, error) {
+/*
+	Продаёт все BTC за USDT
+*/
+func (b *MyBinance) SellAll() (*Order, error) {
 	price, err := b.GetRate()
 	if err != nil {
 		return nil, err
@@ -97,15 +120,21 @@ func (b *MyBinance) SellAll() (Order, error) {
 	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
 		Side(binance.SideTypeSell).Type(binance.OrderTypeLimit).
 		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
-	return &OrderNew{order}, err
+	return convertCreateOrderResponseToOrder(order), err
 }
 
-func (b *MyBinance) GetOrder(id int64) (Order, error) {
+/*
+	Получает информацию по ордеру с данным id
+*/
+func (b *MyBinance) GetOrder(id int64) (*Order, error) {
 	order, err := b.client.NewGetOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
-	return &OrderExist{order}, err
+	return convertOrderToOrder(order), err
 }
 
+/*
+	Закрывает ордер
+*/
 func (b *MyBinance) CancelOrder(id int64) error {
 	_, err := b.client.NewCancelOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
@@ -115,6 +144,9 @@ func (b *MyBinance) CancelOrder(id int64) error {
 const timeShift = 1000
 const hday = 24
 
+/*
+	Получает информацию по свечам
+*/
 func (b *MyBinance) GetKlines() (draw.Klines, error) {
 	klines, err := b.client.
 		NewKlinesService().Symbol("BTCUSDT").

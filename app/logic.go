@@ -35,13 +35,13 @@ func (l *Logic) CommandBuy(s *Sender) {
 		}
 		s.Send(startMessage(orderNew))
 		time.Sleep(sleepDur)
-		order, err := l.b.GetOrder(orderNew.OrderID())
+		order, err := l.b.GetOrder(orderNew.OrderID)
 		if err != nil {
 			s.Send(errorMessage(err, "Buy-GetOrder"))
 			return
 		}
 		s.Send(orderStatusMessage(order))
-		err = l.b.CancelOrder(order.OrderID())
+		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
 			s.Send(errorMessage(err, "Buy-CancelOrder"))
 			return
@@ -58,13 +58,13 @@ func (l *Logic) CommandSell(s *Sender) {
 		}
 		s.Send(startMessage(orderNew))
 		time.Sleep(sleepDur)
-		order, err := l.b.GetOrder(orderNew.OrderID())
+		order, err := l.b.GetOrder(orderNew.OrderID)
 		if err != nil {
 			s.Send(errorMessage(err, "Sell-GetOrder"))
 			return
 		}
 		s.Send(orderStatusMessage(order))
-		err = l.b.CancelOrder(order.OrderID())
+		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
 			s.Send(errorMessage(err, "Sell-CancelOrder"))
 			return

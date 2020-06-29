@@ -1,7 +1,6 @@
 package draw
 
 import (
-	"fmt"
 	"image/color"
 	"time"
 
@@ -17,11 +16,7 @@ func (AllTimeTicks) Ticks(min, max float64) []plot.Tick {
 	tks := plot.DefaultTicks{}.Ticks(min, max)
 	for i, t := range tks {
 		ut := time.Unix(int64(t.Value), 0)
-		d := ut.Format("02")
-		mon := ut.Format("01")
-		h := ut.Format("15")
-		m := ut.Format("04")
-		tks[i].Label = fmt.Sprintf("%v.%v\n%v:%v", d, mon, h, m)
+		tks[i].Label = ut.Format("02.01\n15:04")
 	}
 	return tks
 }
