@@ -12,12 +12,12 @@ type FormulaTrigger struct {
 	active  bool
 	Resp    chan *Response
 	quit    chan struct{}
-	b       binance.MyBinance
+	b       binance.Binance
 	formula formula.Formula
 	haveBTC float64
 }
 
-func NewTrigger(b binance.MyBinance) (FormulaTrigger, error) {
+func NewTrigger(b binance.Binance) (FormulaTrigger, error) {
 	haveBTC, err := b.AccountSymbolBalance("BTC")
 	if err != nil {
 		haveBTC = 0

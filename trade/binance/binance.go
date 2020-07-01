@@ -10,20 +10,20 @@ import (
 
 	"github.com/rwlist/autotrade-bot/pkg/conf"
 
-	"github.com/adshao/go-binance"
+	goBinance "github.com/adshao/go-binance"
 )
 
-type MyBinance struct {
-	client *binance.Client
+type Binance struct {
+	client *goBinance.Client
 }
 
 /*
-	Создаёт новый MyBinance
+	Создаёт новый Binance
 */
-func NewMyBinance(cfg conf.Binance, debug bool) *MyBinance {
-	cli := binance.NewClient(cfg.APIKey, cfg.Secret)
+func NewBinance(cfg conf.Binance, debug bool) *Binance {
+	cli := goBinance.NewClient(cfg.APIKey, cfg.Secret)
 	cli.Debug = debug
-	return &MyBinance{cli}
+	return &Binance{cli}
 }
 
 /*
@@ -31,7 +31,7 @@ func NewMyBinance(cfg conf.Binance, debug bool) *MyBinance {
 	Вернулась ли информация по конкретной валюте непонятно от чего зависит
 	Возможно возвращается для когда-либо использованных пользователем валют
 */
-func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
+func (b *Binance) AccountBalance() ([]goBinance.Balance, error) {
 	info, err := b.client.NewGetAccountService().Do(context.Background())
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (b *MyBinance) AccountBalance() ([]binance.Balance, error) {
 /*
 	Возвращает баланс для конкретной валюты
 */
-func (b *MyBinance) AccountSymbolBalance(symbol string) (float64, error) {
+func (b *Binance) AccountSymbolBalance(symbol string) (float64, error) {
 	info, err := b.client.NewGetAccountService().Do(context.Background())
 	if err != nil {
 		return 0, err
@@ -58,7 +58,7 @@ func (b *MyBinance) AccountSymbolBalance(symbol string) (float64, error) {
 /*
 	Получает баланс какой-то валюты, смотрит на курс валюты к USDT и возвращает баланс в USDT
 */
-func (b *MyBinance) BalanceToUSD(bal *binance.Balance) (float64, error) {
+func (b *Binance) BalanceToUSD(bal *goBinance.Balance) (float64, error) {
 	haveFree := tostr.StrToFloat64(bal.Free)
 	haveLocked := tostr.StrToFloat64(bal.Locked)
 	if bal.Asset == "USDT" {
@@ -76,10 +76,13 @@ func (b *MyBinance) BalanceToUSD(bal *binance.Balance) (float64, error) {
 }
 
 /*
-	Возвращает текущий курс BTC/USDT
+	Возвращает текущий курс symbol[0] (default BTCUSDT)
 */
-func (b *MyBinance) GetRate() (string, error) {
-	symbolPrice, err := b.client.NewListPricesService().Symbol("BTCUSDT").Do(context.Background())
+func (b *Binance) GetRate(symbol ...string) (string, error) {
+	if len(symbol) == 0 {
+		symbol = append(symbol, "BTCUSDT")
+	}
+	symbolPrice, err := b.client.NewListPricesService().Symbol(symbol[0]).Do(context.Background())
 	if err != nil {
 		return "", err
 	}
@@ -87,46 +90,52 @@ func (b *MyBinance) GetRate() (string, error) {
 }
 
 /*
-	Закупается BTC на все USDT
+	Закупается symbol[0] (default BTC) на все symbol[1] (default USDT)
 */
-func (b *MyBinance) BuyAll() (*Order, error) {
+func (b *Binance) BuyAll(symbol ...string) (*Order, error) {
+	if len(symbol) == 0 {
+		symbol = append(symbol, "BTC", "USDT")
+	}
 	price, err := b.GetRate()
 	if err != nil {
 		return nil, err
 	}
-	usdt, err := b.AccountSymbolBalance("USDT")
+	usdt, err := b.AccountSymbolBalance(symbol[1])
 	if err != nil {
 		return nil, err
 	}
 	quantity := usdt / tostr.StrToFloat64(price)
-	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
-		Side(binance.SideTypeBuy).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
+	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
+		Side(goBinance.SideTypeBuy).Type(goBinance.OrderTypeLimit).
+		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
 	return convertCreateOrderResponseToOrder(order), err
 }
 
 /*
-	Продаёт все BTC за USDT
+	Продаёт все symbol[0] (default BTC) за symbol[1] (default USDT)
 */
-func (b *MyBinance) SellAll() (*Order, error) {
+func (b *Binance) SellAll(symbol ...string) (*Order, error) {
+	if len(symbol) == 0 {
+		symbol = append(symbol, "BTC", "USDT")
+	}
 	price, err := b.GetRate()
 	if err != nil {
 		return nil, err
 	}
-	quantity, err := b.AccountSymbolBalance("BTC")
+	quantity, err := b.AccountSymbolBalance(symbol[0])
 	if err != nil {
 		return nil, err
 	}
-	order, err := b.client.NewCreateOrderService().Symbol("BTCUSDT").
-		Side(binance.SideTypeSell).Type(binance.OrderTypeLimit).
-		TimeInForce(binance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
+	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
+		Side(goBinance.SideTypeSell).Type(goBinance.OrderTypeLimit).
+		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
 	return convertCreateOrderResponseToOrder(order), err
 }
 
 /*
 	Получает информацию по ордеру с данным id
 */
-func (b *MyBinance) GetOrder(id int64) (*Order, error) {
+func (b *Binance) GetOrder(id int64) (*Order, error) {
 	order, err := b.client.NewGetOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
 	return convertOrderToOrder(order), err
@@ -135,7 +144,7 @@ func (b *MyBinance) GetOrder(id int64) (*Order, error) {
 /*
 	Закрывает ордер
 */
-func (b *MyBinance) CancelOrder(id int64) error {
+func (b *Binance) CancelOrder(id int64) error {
 	_, err := b.client.NewCancelOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
 	return err
@@ -145,11 +154,14 @@ const timeShift = 1000
 const hday = 24
 
 /*
-	Получает информацию по свечам
+	Получает информацию по свечам symbol[0] (default BTCUSDT)
 */
-func (b *MyBinance) GetKlines() (draw.Klines, error) {
+func (b *Binance) GetKlines(symbol ...string) (draw.Klines, error) {
+	if len(symbol) == 0 {
+		symbol = append(symbol, "BTCUSDT")
+	}
 	klines, err := b.client.
-		NewKlinesService().Symbol("BTCUSDT").
+		NewKlinesService().Symbol(symbol[0]).
 		Interval("15m").
 		StartTime(int64(timeShift) * (time.Now().Add(-time.Hour * hday).Unix())).
 		Do(context.Background())

@@ -6,10 +6,10 @@ import (
 )
 
 type Service struct {
-	myBinance *binance.MyBinance
+	myBinance *binance.Binance
 }
 
-func New(myBinance *binance.MyBinance) *Service {
+func New(myBinance *binance.Binance) *Service {
 	return &Service{
 		myBinance: myBinance,
 	}

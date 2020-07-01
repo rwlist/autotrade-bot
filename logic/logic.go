@@ -1,4 +1,4 @@
-package app
+package logic
 
 import (
 	"math"
@@ -14,11 +14,11 @@ import (
 )
 
 type Logic struct {
-	b  *binance.MyBinance
+	b  *binance.Binance
 	ft trigger.FormulaTrigger
 }
 
-func NewLogic(b *binance.MyBinance) *Logic {
+func NewLogic(b *binance.Binance) *Logic {
 	return &Logic{
 		b: b,
 	}
@@ -26,7 +26,7 @@ func NewLogic(b *binance.MyBinance) *Logic {
 
 const sleepDur = time.Second
 
-func (l *Logic) CommandBuy(s *Sender) {
+func (l *Logic) CommandBuy(s Sender) {
 	for i := 0; i < 5; i++ {
 		orderNew, err := l.b.BuyAll()
 		if err != nil {
@@ -49,7 +49,7 @@ func (l *Logic) CommandBuy(s *Sender) {
 	}
 }
 
-func (l *Logic) CommandSell(s *Sender) {
+func (l *Logic) CommandSell(s Sender) {
 	for i := 0; i < 5; i++ {
 		orderNew, err := l.b.SellAll()
 		if err != nil {
@@ -72,7 +72,7 @@ func (l *Logic) CommandSell(s *Sender) {
 	}
 }
 
-func (l *Logic) CommandDraw(s *Sender, str string, optF formula.Formula) {
+func (l *Logic) CommandDraw(s Sender, str string, optF formula.Formula) {
 	klines, err := l.b.GetKlines()
 	if err != nil {
 		s.Send(errorMessage(err, "Draw GetKlines"))
@@ -118,7 +118,7 @@ func (l *Logic) CommandDraw(s *Sender, str string, optF formula.Formula) {
 	}
 }
 
-func (l *Logic) CommandBegin(s *Sender, str string, isTest bool) {
+func (l *Logic) CommandBegin(s Sender, str string, isTest bool) {
 	if !isTest {
 		l.CommandBuy(s)
 	}
@@ -159,7 +159,7 @@ func (l *Logic) CommandBegin(s *Sender, str string, isTest bool) {
 	}
 }
 
-func (l *Logic) CommandEnd(s *Sender, isTest bool) {
+func (l *Logic) CommandEnd(s Sender, isTest bool) {
 	if !isTest {
 		l.CommandSell(s)
 	}

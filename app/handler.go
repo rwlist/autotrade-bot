@@ -3,6 +3,8 @@ package app
 import (
 	"strings"
 
+	"github.com/rwlist/autotrade-bot/logic"
+
 	"github.com/rwlist/autotrade-bot/app/stat"
 
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
@@ -20,7 +22,7 @@ type Handler struct {
 }
 
 type Services struct {
-	Logic  *Logic
+	Logic  *logic.Logic
 	Status *stat.Service
 }
 

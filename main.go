@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/rwlist/autotrade-bot/logic"
+
 	"github.com/rwlist/autotrade-bot/app/stat"
 
 	"github.com/petuhovskiy/telegram"
@@ -41,13 +43,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	myBinance := binance.NewMyBinance(cfg.Binance, cfg.Binance.Debug)
+	myBinance := binance.NewBinance(cfg.Binance, cfg.Binance.Debug)
 
 	handler := app.NewHandler(
 		bot,
 		cfg,
 		app.Services{
-			Logic:  app.NewLogic(myBinance),
+			Logic:  logic.NewLogic(myBinance),
 			Status: stat.New(myBinance),
 		},
 	)
