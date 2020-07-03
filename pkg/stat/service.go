@@ -39,7 +39,7 @@ func (s *Service) Status() (*Status, error) {
 		free := unsafeDecimal(bal.Free)
 		locked := unsafeDecimal(bal.Locked)
 
-		if free.Equal(decimal.Zero) || locked.Equal(decimal.Zero) {
+		if free.Equal(decimal.Zero) && locked.Equal(decimal.Zero) {
 			continue
 		}
 

@@ -71,6 +71,7 @@ func (h *Handler) commandBuy(chatID int) {
 	if err != nil {
 		log.Println("Error in commandBuy: ", err)
 		h.sendMessage(chatID, "Error in \"/buy\"")
+		return
 	}
 	h.sendMessage(chatID, "Command \"/buy\" finished")
 }
@@ -80,6 +81,7 @@ func (h *Handler) commandSell(chatID int) {
 	if err != nil {
 		log.Println("Error in commandSell: ", err)
 		h.sendMessage(chatID, "Error in \"/sell\"")
+		return
 	}
 	h.sendMessage(chatID, "Command \"/sell\" finished")
 }
@@ -89,11 +91,13 @@ func (h *Handler) commandDraw(chatID int, str string) {
 	if err != nil {
 		log.Println("Error in commandDraw: ", err)
 		h.sendMessage(chatID, "Error in \"/draw\"")
+		return
 	}
 	err = h.sendPhoto(chatID, "graph.png", b)
 	if err != nil {
 		log.Println("Error in commandDraw: ", err)
 		h.sendMessage(chatID, "Error in \"/draw\" while sending picture")
+		return
 	}
 }
 
@@ -102,6 +106,7 @@ func (h *Handler) commandBegin(chatID int, str string) {
 	if err != nil {
 		log.Println("Error in commandBegin: ", err)
 		h.sendMessage(chatID, "Error in \"/begin\"")
+		return
 	}
 }
 
@@ -110,6 +115,7 @@ func (h *Handler) commandEnd(chatID int) {
 	if err != nil {
 		log.Println("Error in commandEnd: ", err)
 		h.sendMessage(chatID, "Error in \"/end\"")
+		return
 	}
 }
 
