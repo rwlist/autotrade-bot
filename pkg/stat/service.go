@@ -35,7 +35,7 @@ func (s *Service) Status() (*Status, error) {
 	total := decimal.Zero
 	for _, bal := range allBalances {
 		bal := bal
-		asset := unsafeDecimal(bal.Asset)
+		asset := bal.Asset
 		free := unsafeDecimal(bal.Free)
 		locked := unsafeDecimal(bal.Locked)
 

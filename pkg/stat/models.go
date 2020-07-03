@@ -9,8 +9,8 @@ type Status struct {
 }
 
 type Balance struct {
+	Asset  string
 	USD    decimal.Decimal
-	Asset  decimal.Decimal
 	Free   decimal.Decimal
 	Locked decimal.Decimal
 }
