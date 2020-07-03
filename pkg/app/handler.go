@@ -3,9 +3,9 @@ package app
 import (
 	"strings"
 
-	"github.com/rwlist/autotrade-bot/logic"
+	"github.com/rwlist/autotrade-bot/pkg/logic"
 
-	"github.com/rwlist/autotrade-bot/app/stat"
+	"github.com/rwlist/autotrade-bot/pkg/stat"
 
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
 
@@ -53,6 +53,14 @@ func (h *Handler) sendMessage(chatID int, text string) {
 		ChatID: tostr.Str(chatID),
 		Text:   text,
 	})
+}
+
+func (h *Handler) sendPhoto(chatID int, name string, b []byte) error {
+	_, err := h.bot.SendPhoto(&telegram.SendPhotoRequest{
+		ChatID: tostr.Str(chatID),
+		Photo:  NewBytesUploader(name, b),
+	})
+	return err
 }
 
 func (h *Handler) handleMessage(msg *telegram.Message) {

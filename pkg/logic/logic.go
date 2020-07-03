@@ -1,16 +1,17 @@
 package logic
 
 import (
+	"fmt"
 	"math"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/trade/trigger"
+	"github.com/rwlist/autotrade-bot/pkg/trigger"
 
+	"github.com/rwlist/autotrade-bot/pkg/draw"
 	"github.com/rwlist/autotrade-bot/pkg/formula"
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
-	"github.com/rwlist/autotrade-bot/trade/draw"
 
-	"github.com/rwlist/autotrade-bot/trade/binance"
+	"github.com/rwlist/autotrade-bot/pkg/binance"
 )
 
 type Logic struct {
@@ -26,63 +27,57 @@ func NewLogic(b *binance.Binance) *Logic {
 
 const sleepDur = time.Second
 
-func (l *Logic) CommandBuy(s Sender) {
+func (l *Logic) Buy(s Sender) error {
 	for i := 0; i < 5; i++ {
 		orderNew, err := l.b.BuyAll()
 		if err != nil {
-			s.Send(errorMessage(err, "Buy-BuyAll"))
-			return
+			return fmt.Errorf("logic.Buy in binance.BuyAll: %w", err)
 		}
 		s.Send(startMessage(orderNew))
 		time.Sleep(sleepDur)
 		order, err := l.b.GetOrder(orderNew.OrderID)
 		if err != nil {
-			s.Send(errorMessage(err, "Buy-GetOrder"))
-			return
+			return fmt.Errorf("logic.Buy in binance.GetOrder: %w", err)
 		}
 		s.Send(orderStatusMessage(order))
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
-			s.Send(errorMessage(err, "Buy-CancelOrder"))
-			return
+			return fmt.Errorf("logic.Buy in binance.CancelOrder: %w", err)
 		}
 	}
+	return nil
 }
 
-func (l *Logic) CommandSell(s Sender) {
+func (l *Logic) Sell(s Sender) error {
 	for i := 0; i < 5; i++ {
 		orderNew, err := l.b.SellAll()
 		if err != nil {
-			s.Send(errorMessage(err, "Sell-BuyAll"))
-			return
+			return fmt.Errorf("logic.Sell in binance.SellAll: %w", err)
 		}
 		s.Send(startMessage(orderNew))
 		time.Sleep(sleepDur)
 		order, err := l.b.GetOrder(orderNew.OrderID)
 		if err != nil {
-			s.Send(errorMessage(err, "Sell-GetOrder"))
-			return
+			return fmt.Errorf("logic.Sell in binance.GetOrder: %w", err)
 		}
 		s.Send(orderStatusMessage(order))
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
-			s.Send(errorMessage(err, "Sell-CancelOrder"))
-			return
+			return fmt.Errorf("logic.Sell in binance.CancelOrder: %w", err)
 		}
 	}
+	return nil
 }
 
-func (l *Logic) CommandDraw(s Sender, str string, optF formula.Formula) {
+func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 	klines, err := l.b.GetKlines()
 	if err != nil {
-		s.Send(errorMessage(err, "Draw GetKlines"))
-		return
+		return nil, fmt.Errorf("logic.Draw in binance.GetKlines: %w", err)
 	}
 
 	p, err := draw.NewPlot()
 	if err != nil {
-		s.Send(errorMessage(err, "Draw in plot.New()"))
-		return
+		return nil, fmt.Errorf("logic.Draw in draw.NewPlot: %w", err)
 	}
 
 	p.AddEnv()
@@ -91,16 +86,14 @@ func (l *Logic) CommandDraw(s Sender, str string, optF formula.Formula) {
 
 	err = p.AddRateGraph(klines)
 	if err != nil {
-		s.Send(errorMessage(err, "Draw in p.AddRateGraph(klines)"))
-		return
+		return nil, fmt.Errorf("logic.Draw in draw.AddRateGraph: %w", err)
 	}
 
 	yMax := klines.Max + math.Sqrt(klines.Max)
 	if optF == nil {
 		f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
 		if err != nil {
-			s.Send(errorMessage(err, "Draw formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))"))
-			return
+			return nil, fmt.Errorf("logic.Draw in formula.NewBasic: %w", err)
 		}
 		p.AddFunction(f, yMax)
 	} else {
@@ -108,47 +101,52 @@ func (l *Logic) CommandDraw(s Sender, str string, optF formula.Formula) {
 	}
 	buffer, err := p.SaveToBuffer()
 	if err != nil {
-		s.Send(errorMessage(err, "Draw in p.SaveToBuffer()"))
-		return
+		return nil, fmt.Errorf("logic.Draw in draw.SaveToBuffer: %w", err)
 	}
-	err = s.SendPhoto("graph.png", buffer.Bytes())
-	if err != nil {
-		s.Send(errorMessage(err, "Draw in s.SendPhoto(\"graph.png\", buffer.Bytes())"))
-		return
-	}
+	return buffer.Bytes(), nil
 }
 
-func (l *Logic) CommandBegin(s Sender, str string, isTest bool) {
+func (l *Logic) Begin(s Sender, str string, isTest bool) error {
 	if !isTest {
-		l.CommandBuy(s)
+		err := l.Buy(s)
+		if err != nil {
+			return fmt.Errorf("logic.Begin in logic.Buy: %w", err)
+		}
 	}
 	var err error
 	l.ft, err = trigger.NewTrigger(*l.b)
 	if err != nil {
-		s.Send(errorMessage(err, "CommandBegin trigger.NewTrigger(*l.myBinance)"))
-		return
+		return fmt.Errorf("logic.Begin in trigger.NewTrigger: %w", err)
 	}
 	rate, err := l.b.GetRate()
 	if err != nil {
-		s.Send(errorMessage(err, "CommandBegin l.myBinance.GetRate()"))
-		return
+		return fmt.Errorf("logic.Begin in binance.GetRate: %w", err)
 	}
 	f, err := formula.NewBasic(str, tostr.StrToFloat64(rate), float64(time.Now().Unix()))
 	if err != nil {
-		s.Send(errorMessage(err, "CommandBegin formula.NewBasic(...)"))
-		return
+		return fmt.Errorf("logic.Begin in formula.NewBasic: %w", err)
 	}
 	l.ft.Begin(f)
 	var cnt, period int64 = 0, 30
 	for val := range l.ft.Resp {
 		if cnt%period == 0 {
 			s.Send(triggerResponseMessage(val))
-			l.CommandDraw(s, "", f)
+			b, err := l.Draw("", f)
+			if err != nil {
+				return fmt.Errorf("logic.Begin in logic.Draw: %w", err)
+			}
+			err = s.SendPhoto("graph.png", b)
+			if err != nil {
+				return fmt.Errorf("logic.Begin in logic.SendPhoto: %w", err)
+			}
 		}
 		if val.AbsDif < 0 {
 			s.Send(triggerResponseMessage(val))
-			l.CommandEnd(s, isTest)
-			return
+			err = l.End(s, isTest)
+			if err != nil {
+				return fmt.Errorf("logic.Begin in logic.End: %w", err)
+			}
+			return nil
 		}
 		if val.RelDif < 1 {
 			period = 6
@@ -157,12 +155,17 @@ func (l *Logic) CommandBegin(s Sender, str string, isTest bool) {
 		}
 		cnt++
 	}
+	return nil
 }
 
-func (l *Logic) CommandEnd(s Sender, isTest bool) {
+func (l *Logic) End(s Sender, isTest bool) error {
 	if !isTest {
-		l.CommandSell(s)
+		err := l.Sell(s)
+		if err != nil {
+			return fmt.Errorf("logic.End in logic.Sell: %w", err)
+		}
 	}
 	l.ft.End()
 	s.Send("trigger OFF")
+	return nil
 }

@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/rwlist/autotrade-bot/logic"
+	"github.com/rwlist/autotrade-bot/pkg/logic"
 
-	"github.com/rwlist/autotrade-bot/app/stat"
+	"github.com/rwlist/autotrade-bot/pkg/stat"
 
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
-	"github.com/rwlist/autotrade-bot/app"
+	"github.com/rwlist/autotrade-bot/pkg/app"
+	"github.com/rwlist/autotrade-bot/pkg/binance"
 	"github.com/rwlist/autotrade-bot/pkg/conf"
-	"github.com/rwlist/autotrade-bot/trade/binance"
 )
 
 func main() {
@@ -56,6 +56,6 @@ func main() {
 
 	for upd := range ch {
 		upd := upd
-		handler.Handle(&upd)
+		go handler.Handle(&upd)
 	}
 }

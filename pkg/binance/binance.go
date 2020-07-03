@@ -5,10 +5,9 @@ import (
 	"math"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
-	"github.com/rwlist/autotrade-bot/trade/draw"
-
 	"github.com/rwlist/autotrade-bot/pkg/conf"
+	"github.com/rwlist/autotrade-bot/pkg/draw"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
 
 	goBinance "github.com/adshao/go-binance"
 )

@@ -1,7 +1,7 @@
 package stat
 
 import (
-	"github.com/rwlist/autotrade-bot/trade/binance"
+	"github.com/rwlist/autotrade-bot/pkg/binance"
 	"github.com/shopspring/decimal"
 )
 

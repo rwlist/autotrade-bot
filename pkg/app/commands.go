@@ -1,6 +1,9 @@
 package app
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 func (h *Handler) handleCommand(chatID int, cmds []string) {
 	if len(cmds) == 0 {
@@ -64,25 +67,50 @@ func (h *Handler) commandStatus(chatID int) {
 }
 
 func (h *Handler) commandBuy(chatID int) {
-	h.svc.Logic.CommandBuy(&Sender{h.bot, chatID})
+	err := h.svc.Logic.Buy(&Sender{h.bot, chatID})
+	if err != nil {
+		log.Println("Error in commandBuy: ", err)
+		h.sendMessage(chatID, "Error in \"/buy\"")
+	}
 	h.sendMessage(chatID, "Command \"/buy\" finished")
 }
 
 func (h *Handler) commandSell(chatID int) {
-	h.svc.Logic.CommandSell(&Sender{h.bot, chatID})
+	err := h.svc.Logic.Sell(&Sender{h.bot, chatID})
+	if err != nil {
+		log.Println("Error in commandSell: ", err)
+		h.sendMessage(chatID, "Error in \"/sell\"")
+	}
 	h.sendMessage(chatID, "Command \"/sell\" finished")
 }
 
 func (h *Handler) commandDraw(chatID int, str string) {
-	h.svc.Logic.CommandDraw(&Sender{h.bot, chatID}, str, nil)
+	b, err := h.svc.Logic.Draw(str, nil)
+	if err != nil {
+		log.Println("Error in commandDraw: ", err)
+		h.sendMessage(chatID, "Error in \"/draw\"")
+	}
+	err = h.sendPhoto(chatID, "graph.png", b)
+	if err != nil {
+		log.Println("Error in commandDraw: ", err)
+		h.sendMessage(chatID, "Error in \"/draw\" while sending picture")
+	}
 }
 
 func (h *Handler) commandBegin(chatID int, str string) {
-	go h.svc.Logic.CommandBegin(&Sender{h.bot, chatID}, str, h.isTest)
+	err := h.svc.Logic.Begin(&Sender{h.bot, chatID}, str, h.isTest)
+	if err != nil {
+		log.Println("Error in commandBegin: ", err)
+		h.sendMessage(chatID, "Error in \"/begin\"")
+	}
 }
 
 func (h *Handler) commandEnd(chatID int) {
-	h.svc.Logic.CommandEnd(&Sender{h.bot, chatID}, h.isTest)
+	err := h.svc.Logic.End(&Sender{h.bot, chatID}, h.isTest)
+	if err != nil {
+		log.Println("Error in commandEnd: ", err)
+		h.sendMessage(chatID, "Error in \"/end\"")
+	}
 }
 
 func (h *Handler) commandNotFound(chatID int) {
