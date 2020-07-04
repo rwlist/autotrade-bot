@@ -90,45 +90,65 @@ func (b *Binance) GetRate(symbol ...string) (string, error) {
 
 /*
 	Закупается symbol[0] (default BTC) на все symbol[1] (default USDT)
+	Возвращает nil, true, nil если закуплено на все деньги
 */
-func (b *Binance) BuyAll(symbol ...string) (*Order, error) {
+func (b *Binance) BuyAll(symbol ...string) (*Order, bool, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
 	}
 	price, err := b.GetRate()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	usdt, err := b.AccountSymbolBalance(symbol[1])
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	quantity := usdt / tostr.StrToFloat64(price)
 	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
 		Side(goBinance.SideTypeBuy).Type(goBinance.OrderTypeLimit).
 		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
-	return convertCreateOrderResponseToOrder(order), err
+	if err != nil {
+		var good []string
+		good = append(good, `<APIError> code=-1013, msg=Filter failure: MIN_NOTIONAL`,
+			`<APIError> code=-1013, msg=Price * QTY is zero or less.`)
+		if err.Error() != good[0] && err.Error() != good[1] {
+			return nil, false, err
+		}
+		return nil, true, nil
+	}
+	return convertCreateOrderResponseToOrder(order), false, nil
 }
 
 /*
 	Продаёт все symbol[0] (default BTC) за symbol[1] (default USDT)
+	Возвращает nil, true, nil если всё продано
 */
-func (b *Binance) SellAll(symbol ...string) (*Order, error) {
+func (b *Binance) SellAll(symbol ...string) (*Order, bool, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
 	}
 	price, err := b.GetRate()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	quantity, err := b.AccountSymbolBalance(symbol[0])
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
 		Side(goBinance.SideTypeSell).Type(goBinance.OrderTypeLimit).
 		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
-	return convertCreateOrderResponseToOrder(order), err
+	if err != nil {
+		var good []string
+		good = append(good, `<APIError> code=-1013, msg=Filter failure: MIN_NOTIONAL`,
+			`<APIError> code=-1013, msg=Price * QTY is zero or less.`)
+		if err.Error() != good[0] && err.Error() != good[1] {
+			return nil, false, err
+		}
+		return nil, true, nil
+	}
+	return convertCreateOrderResponseToOrder(order), false, nil
 }
 
 /*
@@ -146,7 +166,13 @@ func (b *Binance) GetOrder(id int64) (*Order, error) {
 func (b *Binance) CancelOrder(id int64) error {
 	_, err := b.client.NewCancelOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
-	return err
+	if err != nil {
+		good := `<APIError> code=-2011, msg=Unknown order sent.`
+		if err.Error() != good {
+			return err
+		}
+	}
+	return nil
 }
 
 const timeShift = 1000

@@ -18,12 +18,12 @@ const patternBasic = `(rate)-[0-9]+\.?[0-9]*\+[0-9]+\.?[0-9]*\*\((now)-(start)\)
 */
 type Basic struct {
 	rate, start float64   // значения rate и start
-	Coef        []float64 // Числовые коэффициенты
+	coef        []float64 // Числовые коэффициенты
 }
 
 // Calc(now) Вычисляет значение в точке now
 func (f *Basic) Calc(now float64) float64 {
-	return f.Rate() - f.Coef[0] + f.Coef[1]*math.Pow(now-f.Start(), f.Coef[2])
+	return f.Rate() - f.coef[0] + f.coef[1]*math.Pow(now-f.Start(), f.coef[2])
 }
 
 func (f *Basic) Start() float64 {
@@ -58,6 +58,6 @@ func NewBasic(s string, rate, start float64) (*Basic, error) {
 	return &Basic{
 		rate:  rate,
 		start: start,
-		Coef:  coef,
+		coef:  coef,
 	}, nil
 }

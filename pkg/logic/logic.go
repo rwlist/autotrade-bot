@@ -25,45 +25,51 @@ func NewLogic(b *binance.Binance) *Logic {
 	}
 }
 
-const sleepDur = time.Second
+const sleepDur = 600 * time.Millisecond
 
 func (l *Logic) Buy(s Sender) error {
-	for i := 0; i < 5; i++ {
-		orderNew, err := l.b.BuyAll()
-		if err != nil {
-			return fmt.Errorf("logic.Buy in binance.BuyAll: %w", err)
+	for i := 0; i < 10; i++ {
+		order, done, err := l.b.BuyAll()
+		if done {
+			return nil
 		}
-		s.Send(startMessage(orderNew))
+		if err != nil {
+			txt := fmt.Sprintf("Order can't be placed\nError: %v", err)
+			s.Send(txt)
+			return err
+		}
+		txt := startMessage(order) + "\n" + orderStatusMessage(order)
+		s.Send(txt)
 		time.Sleep(sleepDur)
-		order, err := l.b.GetOrder(orderNew.OrderID)
-		if err != nil {
-			return fmt.Errorf("logic.Buy in binance.GetOrder: %w", err)
-		}
-		s.Send(orderStatusMessage(order))
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
-			return fmt.Errorf("logic.Buy in binance.CancelOrder: %w", err)
+			txt := fmt.Sprintf("Can't cancel order:\nId: %v\nError:%v", order.OrderID, err)
+			s.Send(txt)
+			return err
 		}
 	}
 	return nil
 }
 
 func (l *Logic) Sell(s Sender) error {
-	for i := 0; i < 5; i++ {
-		orderNew, err := l.b.SellAll()
-		if err != nil {
-			return fmt.Errorf("logic.Sell in binance.SellAll: %w", err)
+	for i := 0; i < 10; i++ {
+		order, done, err := l.b.SellAll()
+		if done {
+			return nil
 		}
-		s.Send(startMessage(orderNew))
+		if err != nil {
+			txt := fmt.Sprintf("Order can't be placed\nError: %v", err)
+			s.Send(txt)
+			return err
+		}
+		txt := startMessage(order) + "\n" + orderStatusMessage(order)
+		s.Send(txt)
 		time.Sleep(sleepDur)
-		order, err := l.b.GetOrder(orderNew.OrderID)
-		if err != nil {
-			return fmt.Errorf("logic.Sell in binance.GetOrder: %w", err)
-		}
-		s.Send(orderStatusMessage(order))
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
-			return fmt.Errorf("logic.Sell in binance.CancelOrder: %w", err)
+			txt := fmt.Sprintf("Can't cancel order:\nId: %v\nError:%v", order.OrderID, err)
+			s.Send(txt)
+			return err
 		}
 	}
 	return nil

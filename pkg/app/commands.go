@@ -70,33 +70,37 @@ func (h *Handler) commandBuy(chatID int) {
 	err := h.svc.Logic.Buy(&Sender{h.bot, chatID})
 	if err != nil {
 		log.Println("Error in commandBuy: ", err)
-		h.sendMessage(chatID, "Error in \"/buy\"")
+		txt := fmt.Sprintf("Error in commandBuy:\n%v", err)
+		h.sendMessage(chatID, txt)
 		return
 	}
-	h.sendMessage(chatID, "Command \"/buy\" finished")
+	h.sendMessage(chatID, "Command Buy finished")
 }
 
 func (h *Handler) commandSell(chatID int) {
 	err := h.svc.Logic.Sell(&Sender{h.bot, chatID})
 	if err != nil {
 		log.Println("Error in commandSell: ", err)
-		h.sendMessage(chatID, "Error in \"/sell\"")
+		txt := fmt.Sprintf("Error in commandSell:\n%v", err)
+		h.sendMessage(chatID, txt)
 		return
 	}
-	h.sendMessage(chatID, "Command \"/sell\" finished")
+	h.sendMessage(chatID, "Command Sell finished")
 }
 
 func (h *Handler) commandDraw(chatID int, str string) {
 	b, err := h.svc.Logic.Draw(str, nil)
 	if err != nil {
 		log.Println("Error in commandDraw: ", err)
-		h.sendMessage(chatID, "Error in \"/draw\"")
+		txt := fmt.Sprintf("Error in commandDraw:\n%v", err)
+		h.sendMessage(chatID, txt)
 		return
 	}
 	err = h.sendPhoto(chatID, "graph.png", b)
 	if err != nil {
 		log.Println("Error in commandDraw: ", err)
-		h.sendMessage(chatID, "Error in \"/draw\" while sending picture")
+		txt := fmt.Sprintf("Error in commandDraw:\n%v", err)
+		h.sendMessage(chatID, txt)
 		return
 	}
 }
@@ -105,7 +109,8 @@ func (h *Handler) commandBegin(chatID int, str string) {
 	err := h.svc.Logic.Begin(&Sender{h.bot, chatID}, str, h.isTest)
 	if err != nil {
 		log.Println("Error in commandBegin: ", err)
-		h.sendMessage(chatID, "Error in \"/begin\"")
+		txt := fmt.Sprintf("Error in commandBegin:\n%v", err)
+		h.sendMessage(chatID, txt)
 		return
 	}
 }
@@ -114,7 +119,8 @@ func (h *Handler) commandEnd(chatID int) {
 	err := h.svc.Logic.End(&Sender{h.bot, chatID}, h.isTest)
 	if err != nil {
 		log.Println("Error in commandEnd: ", err)
-		h.sendMessage(chatID, "Error in \"/end\"")
+		txt := fmt.Sprintf("Error in commandEnd:\n%v", err)
+		h.sendMessage(chatID, txt)
 		return
 	}
 }
