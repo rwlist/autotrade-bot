@@ -44,9 +44,9 @@ type Response struct {
 
 func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
 	absDif := curRate - fRate
-	relDif := absDif / fRate
+	relDif := 100.0 * absDif / fRate
 	d := curRate - ft.formula.Rate()
-	relProf := d / ft.formula.Rate()
+	relProf := 100.0 * d / ft.formula.Rate()
 	absProf := d * ft.haveBTC
 	return &Response{
 		CurRate:     curRate,
