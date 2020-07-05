@@ -1,6 +1,7 @@
 package trigger
 
 import (
+	"sync"
 	"time"
 
 	"github.com/rwlist/autotrade-bot/pkg/binance"
@@ -11,10 +12,10 @@ import (
 type FormulaTrigger struct {
 	active  bool
 	Resp    chan *Response
-	quit    chan struct{}
 	b       binance.Binance
 	formula formula.Formula
 	haveBTC float64
+	mux     sync.Mutex
 }
 
 func NewTrigger(b binance.Binance) (FormulaTrigger, error) {
@@ -25,7 +26,6 @@ func NewTrigger(b binance.Binance) (FormulaTrigger, error) {
 	return FormulaTrigger{
 		active:  false,
 		Resp:    make(chan *Response),
-		quit:    make(chan struct{}),
 		b:       b,
 		haveBTC: haveBTC,
 	}, err
@@ -40,6 +40,30 @@ type Response struct {
 	AbsProfit   float64
 	RelProfit   float64
 	err         error
+}
+
+func (ft *FormulaTrigger) isActive() bool {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	return ft.active
+}
+
+func (ft *FormulaTrigger) changeActive(state bool) {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	ft.active = state
+}
+
+func (ft *FormulaTrigger) changeFormula(f formula.Formula) {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	ft.formula = f
+}
+
+func (ft *FormulaTrigger) GetFormula() formula.Formula {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	return ft.formula
 }
 
 func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
@@ -63,11 +87,7 @@ const timeSleep = 10 * time.Second
 
 func (ft *FormulaTrigger) CheckLoop() {
 	for {
-		select {
-		case <-ft.quit:
-			return
-
-		default:
+		if ft.isActive() {
 			t := time.Now().Unix()
 			rate, err := ft.b.GetRate()
 			if err != nil {
@@ -77,17 +97,18 @@ func (ft *FormulaTrigger) CheckLoop() {
 			}
 			ft.Resp <- ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(float64(t)))
 			time.Sleep(timeSleep)
+		} else {
+			return
 		}
 	}
 }
 
 func (ft *FormulaTrigger) Begin(f formula.Formula) {
-	ft.active = true
-	ft.formula = f
+	ft.changeActive(true)
+	ft.changeFormula(f)
 	go ft.CheckLoop()
 }
 
 func (ft *FormulaTrigger) End() {
-	ft.active = false
-	ft.quit <- struct{}{}
+	ft.changeActive(false)
 }

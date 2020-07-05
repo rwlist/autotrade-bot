@@ -2,6 +2,7 @@ package logic
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -15,17 +16,18 @@ import (
 )
 
 type Logic struct {
-	b  *binance.Binance
-	ft trigger.FormulaTrigger
+	b  binance.Binance
+	ft *trigger.FormulaTrigger
 }
 
-func NewLogic(b *binance.Binance) *Logic {
+func NewLogic(b binance.Binance, ft *trigger.FormulaTrigger) *Logic {
 	return &Logic{
-		b: b,
+		b:  b,
+		ft: ft,
 	}
 }
 
-const sleepDur = 600 * time.Millisecond
+const sleepDur = 500 * time.Millisecond
 
 func (l *Logic) Buy(s Sender) error {
 	for i := 0; i < 10; i++ {
@@ -34,18 +36,14 @@ func (l *Logic) Buy(s Sender) error {
 			return nil
 		}
 		if err != nil {
-			txt := fmt.Sprintf("Order can't be placed\nError: %v", err)
-			s.Send(txt)
-			return err
+			return fmt.Errorf("in binance.BuyAll: %w", err)
 		}
 		txt := startMessage(order) + "\n" + orderStatusMessage(order)
 		s.Send(txt)
 		time.Sleep(sleepDur)
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
-			txt := fmt.Sprintf("Can't cancel order:\nId: %v\nError:%v", order.OrderID, err)
-			s.Send(txt)
-			return err
+			return fmt.Errorf("in binance.CancelOrder: %w", err)
 		}
 	}
 	return nil
@@ -58,18 +56,14 @@ func (l *Logic) Sell(s Sender) error {
 			return nil
 		}
 		if err != nil {
-			txt := fmt.Sprintf("Order can't be placed\nError: %v", err)
-			s.Send(txt)
-			return err
+			return fmt.Errorf("in binance.SellAll: %w", err)
 		}
 		txt := startMessage(order) + "\n" + orderStatusMessage(order)
 		s.Send(txt)
 		time.Sleep(sleepDur)
 		err = l.b.CancelOrder(order.OrderID)
 		if err != nil {
-			txt := fmt.Sprintf("Can't cancel order:\nId: %v\nError:%v", order.OrderID, err)
-			s.Send(txt)
-			return err
+			return fmt.Errorf("in binance.CancelOrder: %w", err)
 		}
 	}
 	return nil
@@ -81,19 +75,13 @@ func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 		return nil, fmt.Errorf("logic.Draw in binance.GetKlines: %w", err)
 	}
 
-	p, err := draw.NewPlot()
-	if err != nil {
-		return nil, fmt.Errorf("logic.Draw in draw.NewPlot: %w", err)
-	}
+	p := draw.NewPlot()
 
 	p.AddEnv()
 
 	p.AddHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
 
-	err = p.AddRateGraph(klines)
-	if err != nil {
-		return nil, fmt.Errorf("logic.Draw in draw.AddRateGraph: %w", err)
-	}
+	p.AddRateGraph(klines)
 
 	yMax := klines.Max + math.Sqrt(klines.Max)
 	if optF == nil {
@@ -119,11 +107,6 @@ func (l *Logic) Begin(s Sender, str string, isTest bool) error {
 			return fmt.Errorf("logic.Begin in logic.Buy: %w", err)
 		}
 	}
-	var err error
-	l.ft, err = trigger.NewTrigger(*l.b)
-	if err != nil {
-		return fmt.Errorf("logic.Begin in trigger.NewTrigger: %w", err)
-	}
 	rate, err := l.b.GetRate()
 	if err != nil {
 		return fmt.Errorf("logic.Begin in binance.GetRate: %w", err)
@@ -133,26 +116,27 @@ func (l *Logic) Begin(s Sender, str string, isTest bool) error {
 		return fmt.Errorf("logic.Begin in formula.NewBasic: %w", err)
 	}
 	l.ft.Begin(f)
+	go l.checkLoop(s, isTest)
+	return nil
+}
+
+func (l *Logic) checkLoop(s Sender, isTest bool) {
 	var cnt, period int64 = 0, 30
+	f := l.ft.GetFormula()
 	for val := range l.ft.Resp {
 		if cnt%period == 0 {
 			s.Send(triggerResponseMessage(val))
-			b, err := l.Draw("", f)
-			if err != nil {
-				return fmt.Errorf("logic.Begin in logic.Draw: %w", err)
-			}
-			err = s.SendPhoto("graph.png", b)
-			if err != nil {
-				return fmt.Errorf("logic.Begin in logic.SendPhoto: %w", err)
-			}
+			b, _ := l.Draw("", f)
+			s.SendPhoto("graph.png", b)
 		}
 		if val.AbsDif < 0 {
 			s.Send(triggerResponseMessage(val))
-			err = l.End(s, isTest)
+			err := l.End(s, isTest)
 			if err != nil {
-				return fmt.Errorf("logic.Begin in logic.End: %w", err)
+				s.Send(fmt.Sprintf("command end error: %v", err))
+				log.Println(err)
 			}
-			return nil
+			return
 		}
 		if val.RelDif < 1 {
 			period = 6
@@ -161,7 +145,6 @@ func (l *Logic) Begin(s Sender, str string, isTest bool) error {
 		}
 		cnt++
 	}
-	return nil
 }
 
 func (l *Logic) End(s Sender, isTest bool) error {

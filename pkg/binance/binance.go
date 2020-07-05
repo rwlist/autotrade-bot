@@ -19,10 +19,10 @@ type Binance struct {
 /*
 	Создаёт новый Binance
 */
-func NewBinance(cfg conf.Binance, debug bool) *Binance {
+func NewBinance(cfg conf.Binance, debug bool) Binance {
 	cli := goBinance.NewClient(cfg.APIKey, cfg.Secret)
 	cli.Debug = debug
-	return &Binance{cli}
+	return Binance{cli}
 }
 
 /*

@@ -16,9 +16,9 @@ type Plot struct {
 	Plot *plot.Plot
 }
 
-func NewPlot() (Plot, error) {
-	p, err := plot.New()
-	return Plot{p}, err
+func NewPlot() Plot {
+	p, _ := plot.New()
+	return Plot{p}
 }
 
 func (p Plot) AddEnv() {
@@ -47,11 +47,8 @@ func (p Plot) AddFunction(f formula.Formula, yMax float64) {
 	p.Plot.Add(fu)
 }
 
-func (p Plot) AddRateGraph(klines Klines) error {
-	bars, err := custplotter.NewCandlesticks(klines)
-	if err != nil {
-		return err
-	}
+func (p Plot) AddRateGraph(klines Klines) {
+	bars, _ := custplotter.NewCandlesticks(klines)
 	bars.ColorUp = color.RGBA{
 		R: 2,
 		G: 192,
@@ -67,7 +64,6 @@ func (p Plot) AddRateGraph(klines Klines) error {
 	bars.FixedLineColor = false
 	bars.Width = 1
 	p.Plot.Add(bars)
-	return nil
 }
 
 const DefaultWidth = 900

@@ -69,9 +69,9 @@ func (h *Handler) commandStatus(chatID int) {
 func (h *Handler) commandBuy(chatID int) {
 	err := h.svc.Logic.Buy(&Sender{h.bot, chatID})
 	if err != nil {
-		log.Println("Error in commandBuy: ", err)
-		txt := fmt.Sprintf("Error in commandBuy:\n%v", err)
-		h.sendMessage(chatID, txt)
+		err = fmt.Errorf("command buy error: %w: ", err)
+		log.Println(err)
+		h.sendMessage(chatID, err.Error())
 		return
 	}
 	h.sendMessage(chatID, "Command Buy finished")
@@ -80,9 +80,9 @@ func (h *Handler) commandBuy(chatID int) {
 func (h *Handler) commandSell(chatID int) {
 	err := h.svc.Logic.Sell(&Sender{h.bot, chatID})
 	if err != nil {
-		log.Println("Error in commandSell: ", err)
-		txt := fmt.Sprintf("Error in commandSell:\n%v", err)
-		h.sendMessage(chatID, txt)
+		err = fmt.Errorf("command sell error: %w: ", err)
+		log.Println(err)
+		h.sendMessage(chatID, err.Error())
 		return
 	}
 	h.sendMessage(chatID, "Command Sell finished")
@@ -91,26 +91,20 @@ func (h *Handler) commandSell(chatID int) {
 func (h *Handler) commandDraw(chatID int, str string) {
 	b, err := h.svc.Logic.Draw(str, nil)
 	if err != nil {
-		log.Println("Error in commandDraw: ", err)
-		txt := fmt.Sprintf("Error in commandDraw:\n%v", err)
-		h.sendMessage(chatID, txt)
+		err = fmt.Errorf("command draw error: %w: ", err)
+		log.Println(err)
+		h.sendMessage(chatID, err.Error())
 		return
 	}
-	err = h.sendPhoto(chatID, "graph.png", b)
-	if err != nil {
-		log.Println("Error in commandDraw: ", err)
-		txt := fmt.Sprintf("Error in commandDraw:\n%v", err)
-		h.sendMessage(chatID, txt)
-		return
-	}
+	h.sendPhoto(chatID, "graph.png", b)
 }
 
 func (h *Handler) commandBegin(chatID int, str string) {
 	err := h.svc.Logic.Begin(&Sender{h.bot, chatID}, str, h.isTest)
 	if err != nil {
-		log.Println("Error in commandBegin: ", err)
-		txt := fmt.Sprintf("Error in commandBegin:\n%v", err)
-		h.sendMessage(chatID, txt)
+		err = fmt.Errorf("command begin error: %w: ", err)
+		log.Println(err)
+		h.sendMessage(chatID, err.Error())
 		return
 	}
 }
@@ -118,9 +112,9 @@ func (h *Handler) commandBegin(chatID int, str string) {
 func (h *Handler) commandEnd(chatID int) {
 	err := h.svc.Logic.End(&Sender{h.bot, chatID}, h.isTest)
 	if err != nil {
-		log.Println("Error in commandEnd: ", err)
-		txt := fmt.Sprintf("Error in commandEnd:\n%v", err)
-		h.sendMessage(chatID, txt)
+		err = fmt.Errorf("command end error: %w: ", err)
+		log.Println(err)
+		h.sendMessage(chatID, err.Error())
 		return
 	}
 }

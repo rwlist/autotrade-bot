@@ -55,12 +55,11 @@ func (h *Handler) sendMessage(chatID int, text string) {
 	})
 }
 
-func (h *Handler) sendPhoto(chatID int, name string, b []byte) error {
-	_, err := h.bot.SendPhoto(&telegram.SendPhotoRequest{
+func (h *Handler) sendPhoto(chatID int, name string, b []byte) {
+	_, _ = h.bot.SendPhoto(&telegram.SendPhotoRequest{
 		ChatID: tostr.Str(chatID),
 		Photo:  NewBytesUploader(name, b),
 	})
-	return err
 }
 
 func (h *Handler) handleMessage(msg *telegram.Message) {

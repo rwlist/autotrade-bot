@@ -17,10 +17,9 @@ func (s *Sender) Send(text string) {
 	})
 }
 
-func (s *Sender) SendPhoto(name string, b []byte) error {
-	_, err := s.bot.SendPhoto(&telegram.SendPhotoRequest{
+func (s *Sender) SendPhoto(name string, b []byte) {
+	_, _ = s.bot.SendPhoto(&telegram.SendPhotoRequest{
 		ChatID: tostr.Str(s.chatID),
 		Photo:  NewBytesUploader(name, b),
 	})
-	return err
 }

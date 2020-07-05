@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/rwlist/autotrade-bot/pkg/trigger"
+
 	"github.com/rwlist/autotrade-bot/pkg/logic"
 
 	"github.com/rwlist/autotrade-bot/pkg/stat"
@@ -45,17 +47,22 @@ func main() {
 
 	myBinance := binance.NewBinance(cfg.Binance, cfg.Binance.Debug)
 
+	tr, err := trigger.NewTrigger(myBinance)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	handler := app.NewHandler(
 		bot,
 		cfg,
 		app.Services{
-			Logic:  logic.NewLogic(myBinance),
+			Logic:  logic.NewLogic(myBinance, &tr),
 			Status: stat.New(myBinance),
 		},
 	)
 
 	for upd := range ch {
 		upd := upd
-		go handler.Handle(&upd)
+		handler.Handle(&upd)
 	}
 }
