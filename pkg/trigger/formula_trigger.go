@@ -1,6 +1,7 @@
 package trigger
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -8,28 +9,6 @@ import (
 	"github.com/rwlist/autotrade-bot/pkg/formula"
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
 )
-
-type FormulaTrigger struct {
-	active  bool
-	Resp    chan *Response
-	b       binance.Binance
-	formula formula.Formula
-	haveBTC float64
-	mux     sync.Mutex
-}
-
-func NewTrigger(b binance.Binance) (FormulaTrigger, error) {
-	haveBTC, err := b.AccountSymbolBalance("BTC")
-	if err != nil {
-		haveBTC = 0
-	}
-	return FormulaTrigger{
-		active:  false,
-		Resp:    make(chan *Response),
-		b:       b,
-		haveBTC: haveBTC,
-	}, err
-}
 
 type Response struct {
 	CurRate     float64
@@ -39,31 +18,8 @@ type Response struct {
 	StartRate   float64
 	AbsProfit   float64
 	RelProfit   float64
-	err         error
-}
-
-func (ft *FormulaTrigger) isActive() bool {
-	ft.mux.Lock()
-	defer ft.mux.Unlock()
-	return ft.active
-}
-
-func (ft *FormulaTrigger) changeActive(state bool) {
-	ft.mux.Lock()
-	defer ft.mux.Unlock()
-	ft.active = state
-}
-
-func (ft *FormulaTrigger) changeFormula(f formula.Formula) {
-	ft.mux.Lock()
-	defer ft.mux.Unlock()
-	ft.formula = f
-}
-
-func (ft *FormulaTrigger) GetFormula() formula.Formula {
-	ft.mux.Lock()
-	defer ft.mux.Unlock()
-	return ft.formula
+	T           time.Time
+	Err         error
 }
 
 func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
@@ -80,23 +36,100 @@ func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
 		StartRate:   ft.formula.Rate(),
 		AbsProfit:   absProf,
 		RelProfit:   relProf,
+		T:           time.Now(),
 	}
 }
 
-const timeSleep = 10 * time.Second
+type FormulaTrigger struct {
+	active  bool
+	Resp    *Response
+	Ping    chan struct{}
+	haveBTC float64
+	b       binance.Binance
+	formula formula.Formula
+	mux     sync.Mutex
+}
+
+func NewTrigger(b binance.Binance) (FormulaTrigger, error) {
+	haveBTC, err := b.AccountSymbolBalance("BTC")
+	if err != nil {
+		haveBTC = 0
+	}
+	return FormulaTrigger{
+		active:  false,
+		Resp:    &Response{},
+		Ping:    make(chan struct{}),
+		haveBTC: haveBTC,
+		b:       b,
+	}, err
+}
+
+func (ft *FormulaTrigger) IsActive() bool {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	return ft.active
+}
+
+func (ft *FormulaTrigger) updActive(state bool) {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	ft.active = state
+}
+
+func (ft *FormulaTrigger) UpdFormula(f formula.Formula) {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	ft.formula = f
+}
+
+func (ft *FormulaTrigger) GetFormula() formula.Formula {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	return ft.formula
+}
+
+func (ft *FormulaTrigger) updBTC() {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	haveBTC, err := ft.b.AccountSymbolBalance("BTC")
+	if err != nil {
+		haveBTC = 0
+	}
+	ft.haveBTC = haveBTC
+}
+
+const TimeSleep = 10 * time.Second
+
+func (ft *FormulaTrigger) check() *Response {
+	t := time.Now().Unix()
+	rate, err := ft.b.GetRate()
+	if err != nil {
+		return &Response{
+			Err: fmt.Errorf("binance.GetRate error: %w: ", err),
+			T:   time.Now(),
+		}
+	}
+	return ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(float64(t)))
+}
+
+func (ft *FormulaTrigger) UpdResponse() {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	ft.Resp = ft.check()
+}
+
+func (ft *FormulaTrigger) GetResponse() Response {
+	ft.mux.Lock()
+	defer ft.mux.Unlock()
+	return *ft.Resp
+}
 
 func (ft *FormulaTrigger) CheckLoop() {
 	for {
-		if ft.isActive() {
-			t := time.Now().Unix()
-			rate, err := ft.b.GetRate()
-			if err != nil {
-				ft.Resp <- &Response{
-					err: err,
-				}
-			}
-			ft.Resp <- ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(float64(t)))
-			time.Sleep(timeSleep)
+		if ft.IsActive() {
+			ft.UpdResponse()
+			ft.Ping <- struct{}{}
+			time.Sleep(TimeSleep)
 		} else {
 			return
 		}
@@ -104,11 +137,12 @@ func (ft *FormulaTrigger) CheckLoop() {
 }
 
 func (ft *FormulaTrigger) Begin(f formula.Formula) {
-	ft.changeActive(true)
-	ft.changeFormula(f)
+	ft.updActive(true)
+	ft.updBTC()
+	ft.UpdFormula(f)
 	go ft.CheckLoop()
 }
 
 func (ft *FormulaTrigger) End() {
-	ft.changeActive(false)
+	ft.updActive(false)
 }

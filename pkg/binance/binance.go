@@ -3,6 +3,7 @@ package binance
 import (
 	"context"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/rwlist/autotrade-bot/pkg/conf"
@@ -88,67 +89,107 @@ func (b *Binance) GetRate(symbol ...string) (string, error) {
 	return symbolPrice[0].Price, nil
 }
 
+type TradeStatus struct {
+	Order *Order
+	Done  bool
+	Err   error
+}
+
 /*
 	Закупается symbol[0] (default BTC) на все symbol[1] (default USDT)
 	Возвращает nil, true, nil если закуплено на все деньги
 */
-func (b *Binance) BuyAll(symbol ...string) (*Order, bool, error) {
+func (b *Binance) BuyAll(symbol ...string) *TradeStatus {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
 	}
 	price, err := b.GetRate()
 	if err != nil {
-		return nil, false, err
+		return &TradeStatus{
+			Order: nil,
+			Done:  false,
+			Err:   err,
+		}
 	}
 	usdt, err := b.AccountSymbolBalance(symbol[1])
 	if err != nil {
-		return nil, false, err
+		return &TradeStatus{
+			Order: nil,
+			Done:  false,
+			Err:   err,
+		}
 	}
 	quantity := usdt / tostr.StrToFloat64(price)
 	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
 		Side(goBinance.SideTypeBuy).Type(goBinance.OrderTypeLimit).
 		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
 	if err != nil {
-		var good []string
-		good = append(good, `<APIError> code=-1013, msg=Filter failure: MIN_NOTIONAL`,
-			`<APIError> code=-1013, msg=Price * QTY is zero or less.`)
-		if err.Error() != good[0] && err.Error() != good[1] {
-			return nil, false, err
+		if strings.Contains(err.Error(), "code=-1013") {
+			return &TradeStatus{
+				Order: nil,
+				Done:  true,
+				Err:   nil,
+			}
 		}
-		return nil, true, nil
+		return &TradeStatus{
+			Order: nil,
+			Done:  false,
+			Err:   err,
+		}
 	}
-	return convertCreateOrderResponseToOrder(order), false, nil
+	return &TradeStatus{
+		Order: convertCreateOrderResponseToOrder(order),
+		Done:  false,
+		Err:   nil,
+	}
 }
 
 /*
 	Продаёт все symbol[0] (default BTC) за symbol[1] (default USDT)
 	Возвращает nil, true, nil если всё продано
 */
-func (b *Binance) SellAll(symbol ...string) (*Order, bool, error) {
+func (b *Binance) SellAll(symbol ...string) *TradeStatus {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
 	}
 	price, err := b.GetRate()
 	if err != nil {
-		return nil, false, err
+		return &TradeStatus{
+			Order: nil,
+			Done:  false,
+			Err:   err,
+		}
 	}
 	quantity, err := b.AccountSymbolBalance(symbol[0])
 	if err != nil {
-		return nil, false, err
+		return &TradeStatus{
+			Order: nil,
+			Done:  false,
+			Err:   err,
+		}
 	}
 	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
 		Side(goBinance.SideTypeSell).Type(goBinance.OrderTypeLimit).
 		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
 	if err != nil {
-		var good []string
-		good = append(good, `<APIError> code=-1013, msg=Filter failure: MIN_NOTIONAL`,
-			`<APIError> code=-1013, msg=Price * QTY is zero or less.`)
-		if err.Error() != good[0] && err.Error() != good[1] {
-			return nil, false, err
+		if strings.Contains(err.Error(), "code=-1013") {
+			return &TradeStatus{
+				Order: nil,
+				Done:  true,
+				Err:   nil,
+			}
 		}
-		return nil, true, nil
+		return &TradeStatus{
+			Order: nil,
+			Done:  false,
+			Err:   err,
+		}
 	}
-	return convertCreateOrderResponseToOrder(order), false, nil
+	return &TradeStatus{
+		Order: convertCreateOrderResponseToOrder(order),
+		Done:  false,
+		Err:   nil,
+	}
 }
 
 /*
@@ -167,8 +208,7 @@ func (b *Binance) CancelOrder(id int64) error {
 	_, err := b.client.NewCancelOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
 	if err != nil {
-		good := `<APIError> code=-2011, msg=Unknown order sent.`
-		if err.Error() != good {
+		if !strings.Contains(err.Error(), "code=-2011") {
 			return err
 		}
 	}

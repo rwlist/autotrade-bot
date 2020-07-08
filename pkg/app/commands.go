@@ -11,7 +11,14 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 	}
 
 	cmd := cmds[0]
+	str := ""
+	if len(cmds) > 1 {
+		str = cmds[1]
+	}
 	switch cmd {
+	case "/fstat":
+		h.commandFstat(chatID, str)
+
 	case "/testSwitch":
 		h.commandTestModeSwitch(chatID)
 
@@ -19,10 +26,10 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 		h.commandEnd(chatID)
 
 	case "/begin":
-		h.commandBegin(chatID, cmds[1])
+		h.commandBegin(chatID, str)
 
 	case "/draw":
-		h.commandDraw(chatID, cmds[1])
+		h.commandDraw(chatID, str)
 
 	case "/sell":
 		h.commandSell(chatID)
@@ -117,6 +124,18 @@ func (h *Handler) commandEnd(chatID int) {
 		h.sendMessage(chatID, err.Error())
 		return
 	}
+}
+
+func (h *Handler) commandFstat(chatID int, str string) {
+	status := h.svc.Logic.Fstat(str)
+	if status.Err != nil {
+		err := fmt.Errorf("command fstat error: %w: ", status.Err)
+		log.Println(err)
+		h.sendMessage(chatID, err.Error())
+		return
+	}
+	h.sendMessage(chatID, status.Txt)
+	h.sendPhoto(chatID, "graph.png", status.B)
 }
 
 func (h *Handler) commandNotFound(chatID int) {
