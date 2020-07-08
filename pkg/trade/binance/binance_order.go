@@ -1,19 +1,12 @@
 package binance
 
-import "github.com/adshao/go-binance"
+import (
+	"github.com/adshao/go-binance"
+	"github.com/rwlist/autotrade-bot/pkg/trade"
+)
 
-type Order struct {
-	Symbol           string
-	OrderID          int64
-	Price            string
-	OrigQuantity     string
-	ExecutedQuantity string
-	Status           string
-	Side             string
-}
-
-func convertOrderToOrder(ord *binance.Order) *Order {
-	return &Order{
+func convertOrderToOrder(ord *binance.Order) *trade.Order {
+	return &trade.Order{
 		Symbol:           ord.Symbol,
 		OrderID:          ord.OrderID,
 		Price:            ord.Price,
@@ -24,8 +17,8 @@ func convertOrderToOrder(ord *binance.Order) *Order {
 	}
 }
 
-func convertCreateOrderResponseToOrder(ord *binance.CreateOrderResponse) *Order {
-	return &Order{
+func convertCreateOrderResponseToOrder(ord *binance.CreateOrderResponse) *trade.Order {
+	return &trade.Order{
 		Symbol:           ord.Symbol,
 		OrderID:          ord.OrderID,
 		Price:            ord.Price,

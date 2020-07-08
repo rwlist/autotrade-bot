@@ -6,21 +6,21 @@ import (
 	"math"
 	"time"
 
+	"github.com/rwlist/autotrade-bot/pkg/trade"
+
 	"github.com/rwlist/autotrade-bot/pkg/trigger"
 
 	"github.com/rwlist/autotrade-bot/pkg/draw"
 	"github.com/rwlist/autotrade-bot/pkg/formula"
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
-
-	"github.com/rwlist/autotrade-bot/pkg/binance"
 )
 
 type Logic struct {
-	b  binance.Binance
+	b  trade.IExchange
 	ft *trigger.FormulaTrigger
 }
 
-func NewLogic(b binance.Binance, ft *trigger.FormulaTrigger) *Logic {
+func NewLogic(b trade.IExchange, ft *trigger.FormulaTrigger) *Logic {
 	return &Logic{
 		b:  b,
 		ft: ft,
@@ -51,7 +51,7 @@ func (l *Logic) Buy(s Sender) error {
 
 func (l *Logic) Sell(s Sender) error {
 	for i := 0; i < 10; i++ {
-		order := l.b.BuyAll()
+		order := l.b.SellAll()
 		if order.Done {
 			return nil
 		}

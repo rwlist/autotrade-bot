@@ -3,16 +3,16 @@ package logic
 import (
 	"fmt"
 
-	"github.com/rwlist/autotrade-bot/pkg/trigger"
+	"github.com/rwlist/autotrade-bot/pkg/trade"
 
-	"github.com/rwlist/autotrade-bot/pkg/binance"
+	"github.com/rwlist/autotrade-bot/pkg/trigger"
 )
 
-func startMessage(order *binance.Order) string {
+func startMessage(order *trade.Order) string {
 	return fmt.Sprintf("A %v BTC/USDT order was placed with price = %v.\nWaiting for %s", order.Side, order.Price, sleepDur)
 }
 
-func orderStatusMessage(order *binance.Order) string {
+func orderStatusMessage(order *trade.Order) string {
 	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side, order.ExecutedQuantity, order.OrigQuantity, order.Status)
 }
 

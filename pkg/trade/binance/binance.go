@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rwlist/autotrade-bot/pkg/trade"
+
 	"github.com/rwlist/autotrade-bot/pkg/conf"
 	"github.com/rwlist/autotrade-bot/pkg/draw"
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
@@ -31,12 +33,12 @@ func NewBinance(cfg conf.Binance, debug bool) Binance {
 	Вернулась ли информация по конкретной валюте непонятно от чего зависит
 	Возможно возвращается для когда-либо использованных пользователем валют
 */
-func (b *Binance) AccountBalance() ([]goBinance.Balance, error) {
+func (b *Binance) AccountBalance() ([]trade.Balance, error) {
 	info, err := b.client.NewGetAccountService().Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	return info.Balances, err
+	return convertBalanceSlice(info.Balances), err
 }
 
 /*
@@ -58,7 +60,7 @@ func (b *Binance) AccountSymbolBalance(symbol string) (float64, error) {
 /*
 	Получает баланс какой-то валюты, смотрит на курс валюты к USDT и возвращает баланс в USDT
 */
-func (b *Binance) BalanceToUSD(bal *goBinance.Balance) (float64, error) {
+func (b *Binance) BalanceToUSD(bal *trade.Balance) (float64, error) {
 	haveFree := tostr.StrToFloat64(bal.Free)
 	haveLocked := tostr.StrToFloat64(bal.Locked)
 	if bal.Asset == "USDT" {
@@ -89,23 +91,17 @@ func (b *Binance) GetRate(symbol ...string) (string, error) {
 	return symbolPrice[0].Price, nil
 }
 
-type TradeStatus struct {
-	Order *Order
-	Done  bool
-	Err   error
-}
-
 /*
 	Закупается symbol[0] (default BTC) на все symbol[1] (default USDT)
 	Возвращает nil, true, nil если закуплено на все деньги
 */
-func (b *Binance) BuyAll(symbol ...string) *TradeStatus {
+func (b *Binance) BuyAll(symbol ...string) *trade.Status {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
 	}
 	price, err := b.GetRate()
 	if err != nil {
-		return &TradeStatus{
+		return &trade.Status{
 			Order: nil,
 			Done:  false,
 			Err:   err,
@@ -113,7 +109,7 @@ func (b *Binance) BuyAll(symbol ...string) *TradeStatus {
 	}
 	usdt, err := b.AccountSymbolBalance(symbol[1])
 	if err != nil {
-		return &TradeStatus{
+		return &trade.Status{
 			Order: nil,
 			Done:  false,
 			Err:   err,
@@ -125,19 +121,19 @@ func (b *Binance) BuyAll(symbol ...string) *TradeStatus {
 		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
 	if err != nil {
 		if strings.Contains(err.Error(), "code=-1013") {
-			return &TradeStatus{
+			return &trade.Status{
 				Order: nil,
 				Done:  true,
 				Err:   nil,
 			}
 		}
-		return &TradeStatus{
+		return &trade.Status{
 			Order: nil,
 			Done:  false,
 			Err:   err,
 		}
 	}
-	return &TradeStatus{
+	return &trade.Status{
 		Order: convertCreateOrderResponseToOrder(order),
 		Done:  false,
 		Err:   nil,
@@ -148,13 +144,13 @@ func (b *Binance) BuyAll(symbol ...string) *TradeStatus {
 	Продаёт все symbol[0] (default BTC) за symbol[1] (default USDT)
 	Возвращает nil, true, nil если всё продано
 */
-func (b *Binance) SellAll(symbol ...string) *TradeStatus {
+func (b *Binance) SellAll(symbol ...string) *trade.Status {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
 	}
 	price, err := b.GetRate()
 	if err != nil {
-		return &TradeStatus{
+		return &trade.Status{
 			Order: nil,
 			Done:  false,
 			Err:   err,
@@ -162,7 +158,7 @@ func (b *Binance) SellAll(symbol ...string) *TradeStatus {
 	}
 	quantity, err := b.AccountSymbolBalance(symbol[0])
 	if err != nil {
-		return &TradeStatus{
+		return &trade.Status{
 			Order: nil,
 			Done:  false,
 			Err:   err,
@@ -173,19 +169,19 @@ func (b *Binance) SellAll(symbol ...string) *TradeStatus {
 		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
 	if err != nil {
 		if strings.Contains(err.Error(), "code=-1013") {
-			return &TradeStatus{
+			return &trade.Status{
 				Order: nil,
 				Done:  true,
 				Err:   nil,
 			}
 		}
-		return &TradeStatus{
+		return &trade.Status{
 			Order: nil,
 			Done:  false,
 			Err:   err,
 		}
 	}
-	return &TradeStatus{
+	return &trade.Status{
 		Order: convertCreateOrderResponseToOrder(order),
 		Done:  false,
 		Err:   nil,
@@ -195,7 +191,7 @@ func (b *Binance) SellAll(symbol ...string) *TradeStatus {
 /*
 	Получает информацию по ордеру с данным id
 */
-func (b *Binance) GetOrder(id int64) (*Order, error) {
+func (b *Binance) GetOrder(id int64) (*trade.Order, error) {
 	order, err := b.client.NewGetOrderService().Symbol("BTCUSDT").
 		OrderID(id).Do(context.Background())
 	return convertOrderToOrder(order), err

@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/pkg/binance"
 	"github.com/rwlist/autotrade-bot/pkg/formula"
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/trade/binance"
 )
 
 type Response struct {

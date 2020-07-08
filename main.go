@@ -13,8 +13,8 @@ import (
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
 	"github.com/rwlist/autotrade-bot/pkg/app"
-	"github.com/rwlist/autotrade-bot/pkg/binance"
 	"github.com/rwlist/autotrade-bot/pkg/conf"
+	"github.com/rwlist/autotrade-bot/pkg/trade/binance"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 		bot,
 		cfg,
 		app.Services{
-			Logic:  logic.NewLogic(myBinance, &tr),
+			Logic:  logic.NewLogic(&myBinance, &tr),
 			Status: stat.New(myBinance),
 		},
 	)
