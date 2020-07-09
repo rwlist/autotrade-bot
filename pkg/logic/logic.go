@@ -2,9 +2,10 @@ package logic
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 
@@ -187,7 +188,7 @@ func (l *Logic) checkLoop(s Sender, isTest bool) {
 			err := l.End(s, isTest)
 			if err != nil {
 				s.Send(fmt.Sprintf("command end error: %v", err))
-				log.Println(err)
+				log.WithError(err).Error("command end error")
 			}
 			return
 		}

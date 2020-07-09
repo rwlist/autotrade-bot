@@ -2,7 +2,8 @@ package app
 
 import (
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (h *Handler) handleCommand(chatID int, cmds []string) {
@@ -76,8 +77,8 @@ func (h *Handler) commandStatus(chatID int) {
 func (h *Handler) commandBuy(chatID int) {
 	err := h.svc.Logic.Buy(&Sender{h.bot, chatID})
 	if err != nil {
+		log.WithError(err).Error("command buy error")
 		err = fmt.Errorf("command buy error: %w: ", err)
-		log.Println(err)
 		h.sendMessage(chatID, err.Error())
 		return
 	}
@@ -87,8 +88,8 @@ func (h *Handler) commandBuy(chatID int) {
 func (h *Handler) commandSell(chatID int) {
 	err := h.svc.Logic.Sell(&Sender{h.bot, chatID})
 	if err != nil {
+		log.WithError(err).Error("command sell error")
 		err = fmt.Errorf("command sell error: %w: ", err)
-		log.Println(err)
 		h.sendMessage(chatID, err.Error())
 		return
 	}
@@ -98,8 +99,8 @@ func (h *Handler) commandSell(chatID int) {
 func (h *Handler) commandDraw(chatID int, str string) {
 	b, err := h.svc.Logic.Draw(str, nil)
 	if err != nil {
+		log.WithError(err).Error("command draw error")
 		err = fmt.Errorf("command draw error: %w: ", err)
-		log.Println(err)
 		h.sendMessage(chatID, err.Error())
 		return
 	}
@@ -109,8 +110,8 @@ func (h *Handler) commandDraw(chatID int, str string) {
 func (h *Handler) commandBegin(chatID int, str string) {
 	err := h.svc.Logic.Begin(&Sender{h.bot, chatID}, str, h.isTest)
 	if err != nil {
+		log.WithError(err).Error("command begin error")
 		err = fmt.Errorf("command begin error: %w: ", err)
-		log.Println(err)
 		h.sendMessage(chatID, err.Error())
 		return
 	}
@@ -119,8 +120,8 @@ func (h *Handler) commandBegin(chatID int, str string) {
 func (h *Handler) commandEnd(chatID int) {
 	err := h.svc.Logic.End(&Sender{h.bot, chatID}, h.isTest)
 	if err != nil {
+		log.WithError(err).Error("command end error")
 		err = fmt.Errorf("command end error: %w: ", err)
-		log.Println(err)
 		h.sendMessage(chatID, err.Error())
 		return
 	}
@@ -129,8 +130,9 @@ func (h *Handler) commandEnd(chatID int) {
 func (h *Handler) commandFstat(chatID int, str string) {
 	status := h.svc.Logic.Fstat(str)
 	if status.Err != nil {
-		err := fmt.Errorf("command fstat error: %w: ", status.Err)
-		log.Println(err)
+		err := status.Err
+		log.WithError(err).Error("command fstat error")
+		err = fmt.Errorf("command fstat error: %w: ", err)
 		h.sendMessage(chatID, err.Error())
 		return
 	}
@@ -162,7 +164,7 @@ func (h *Handler) commandHelp(chatID int) {
 /draw <formula> (example: rate-10+0.0002*(now-start)^1.2) 		draws graph of given formula
 /begin <formula> buys BTC with all USDT, activates trigger 
 /end    deactivates trigger and sells all BTC
-/drawit TBD
+/fstat 	draws graph and sends status message
 `
 
 	h.sendMessage(chatID, str)

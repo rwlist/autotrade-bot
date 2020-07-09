@@ -2,7 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/rwlist/autotrade-bot/pkg/trigger"
 
@@ -18,9 +19,14 @@ import (
 )
 
 func main() {
+	log.SetFormatter(&log.JSONFormatter{PrettyPrint: true})
+
+	log.SetReportCaller(true)
+	log.SetLevel(log.DebugLevel)
+
 	cfg, err := conf.ParseEnv()
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal("in conf.ParseEnv()")
 	}
 
 	bot := telegram.NewBotWithOpts(cfg.Bot.Token, &telegram.Opts{
@@ -28,7 +34,7 @@ func main() {
 			return func(methodName string, req interface{}) (message json.RawMessage, err error) {
 				res, err := handler(methodName, req)
 				if err != nil {
-					log.Println("Telegram response error: ", err)
+					log.WithError(err).Error("telegram response error")
 				}
 
 				return res, err
@@ -42,14 +48,14 @@ func main() {
 		Timeout: 10,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal("in updates.StartPolling()")
 	}
 
 	myBinance := binance.NewBinance(cfg.Binance, cfg.Binance.Debug)
 
 	tr, err := trigger.NewTrigger(myBinance)
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal("in trigger.NewTrigger")
 	}
 
 	handler := app.NewHandler(

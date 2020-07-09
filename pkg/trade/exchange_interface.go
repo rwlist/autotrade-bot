@@ -9,7 +9,7 @@ type IExchange interface {
 	GetRate(symbol ...string) (string, error)
 	BuyAll(symbol ...string) *Status
 	SellAll(symbol ...string) *Status
-	GetOrder(id int64) (*Order, error)
-	CancelOrder(id int64) error
+	GetOrder(id int64, symbol ...string) (*Order, error)
+	CancelOrder(id int64, symbol ...string) error
 	GetKlines(symbol ...string) (draw.Klines, error)
 }

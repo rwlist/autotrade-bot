@@ -1,7 +1,6 @@
 package binance
 
 import (
-	"context"
 	"math"
 	"strings"
 	"time"
@@ -16,15 +15,19 @@ import (
 )
 
 type Binance struct {
-	client *goBinance.Client
+	client Client
 }
 
 /*
 	Создаёт новый Binance
 */
 func NewBinance(cfg conf.Binance, debug bool) Binance {
-	cli := goBinance.NewClient(cfg.APIKey, cfg.Secret)
-	cli.Debug = debug
+	var cli Client
+	if debug {
+		cli = NewClientLog(cfg.APIKey, cfg.Secret)
+	} else {
+		cli = NewClientDefault(cfg.APIKey, cfg.Secret)
+	}
 	return Binance{cli}
 }
 
@@ -34,22 +37,22 @@ func NewBinance(cfg conf.Binance, debug bool) Binance {
 	Возможно возвращается для когда-либо использованных пользователем валют
 */
 func (b *Binance) AccountBalance() ([]trade.Balance, error) {
-	info, err := b.client.NewGetAccountService().Do(context.Background())
+	info, err := b.client.AccountBalance()
 	if err != nil {
 		return nil, err
 	}
-	return convertBalanceSlice(info.Balances), err
+	return convertBalanceSlice(info), err
 }
 
 /*
 	Возвращает баланс для конкретной валюты
 */
 func (b *Binance) AccountSymbolBalance(symbol string) (float64, error) {
-	info, err := b.client.NewGetAccountService().Do(context.Background())
+	info, err := b.client.AccountBalance()
 	if err != nil {
 		return 0, err
 	}
-	for _, bal := range info.Balances {
+	for _, bal := range info {
 		if bal.Asset == symbol {
 			return sum(bal.Free, bal.Locked), nil
 		}
@@ -63,17 +66,20 @@ func (b *Binance) AccountSymbolBalance(symbol string) (float64, error) {
 func (b *Binance) BalanceToUSD(bal *trade.Balance) (float64, error) {
 	haveFree := tostr.StrToFloat64(bal.Free)
 	haveLocked := tostr.StrToFloat64(bal.Locked)
+
 	if bal.Asset == "USDT" {
 		return haveFree + haveLocked, nil
 	}
 
-	symbolPrice, err := b.client.NewListPricesService().Symbol(bal.Asset + "USDT").Do(context.Background())
+	symbolPrice, err := b.client.ListPrices(bal.Asset + "USDT")
 	if err != nil {
 		return 0, err
 	}
+
 	price := tostr.StrToFloat64(symbolPrice[0].Price)
 	haveFree *= price
 	haveLocked *= price
+
 	return haveFree + haveLocked, nil
 }
 
@@ -84,7 +90,7 @@ func (b *Binance) GetRate(symbol ...string) (string, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTCUSDT")
 	}
-	symbolPrice, err := b.client.NewListPricesService().Symbol(symbol[0]).Do(context.Background())
+	symbolPrice, err := b.client.ListPrices(symbol[0])
 	if err != nil {
 		return "", err
 	}
@@ -116,9 +122,17 @@ func (b *Binance) BuyAll(symbol ...string) *trade.Status {
 		}
 	}
 	quantity := usdt / tostr.StrToFloat64(price)
-	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
-		Side(goBinance.SideTypeBuy).Type(goBinance.OrderTypeLimit).
-		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
+
+	req := &orderReq{
+		Symbol:   symbol[0] + symbol[1],
+		Side:     goBinance.SideTypeBuy,
+		Type:     goBinance.OrderTypeLimit,
+		Tif:      goBinance.TimeInForceTypeGTC,
+		Price:    price,
+		Quantity: tostr.Float64ToStr(quantity, 6),
+	}
+	order, err := b.client.CreateOrder(req)
+
 	if err != nil {
 		if strings.Contains(err.Error(), "code=-1013") {
 			return &trade.Status{
@@ -164,9 +178,17 @@ func (b *Binance) SellAll(symbol ...string) *trade.Status {
 			Err:   err,
 		}
 	}
-	order, err := b.client.NewCreateOrderService().Symbol(symbol[0] + symbol[1]).
-		Side(goBinance.SideTypeSell).Type(goBinance.OrderTypeLimit).
-		TimeInForce(goBinance.TimeInForceTypeGTC).Price(price).Quantity(tostr.Float64ToStr(quantity, 6)).Do(context.Background())
+
+	req := &orderReq{
+		Symbol:   symbol[0] + symbol[1],
+		Side:     goBinance.SideTypeSell,
+		Type:     goBinance.OrderTypeLimit,
+		Tif:      goBinance.TimeInForceTypeGTC,
+		Price:    price,
+		Quantity: tostr.Float64ToStr(quantity, 6),
+	}
+	order, err := b.client.CreateOrder(req)
+
 	if err != nil {
 		if strings.Contains(err.Error(), "code=-1013") {
 			return &trade.Status{
@@ -189,20 +211,34 @@ func (b *Binance) SellAll(symbol ...string) *trade.Status {
 }
 
 /*
-	Получает информацию по ордеру с данным id
+	Получает информацию по ордеру для пары symbol[0] ("BTCUSDT") с данным id
 */
-func (b *Binance) GetOrder(id int64) (*trade.Order, error) {
-	order, err := b.client.NewGetOrderService().Symbol("BTCUSDT").
-		OrderID(id).Do(context.Background())
+func (b *Binance) GetOrder(id int64, symbol ...string) (*trade.Order, error) {
+	if len(symbol) == 0 {
+		symbol = append(symbol, "BTCUSDT")
+	}
+
+	req := &orderID{
+		Symbol: symbol[0],
+		ID:     id,
+	}
+	order, err := b.client.GetOrder(req)
 	return convertOrderToOrder(order), err
 }
 
 /*
-	Закрывает ордер
+	Закрывает ордер с данным id для пары symbol[0] ("BTCUSDT")
 */
-func (b *Binance) CancelOrder(id int64) error {
-	_, err := b.client.NewCancelOrderService().Symbol("BTCUSDT").
-		OrderID(id).Do(context.Background())
+func (b *Binance) CancelOrder(id int64, symbol ...string) error {
+	if len(symbol) == 0 {
+		symbol = append(symbol, "BTCUSDT")
+	}
+
+	req := &orderID{
+		Symbol: symbol[0],
+		ID:     id,
+	}
+	_, err := b.client.CancelOrder(req)
 	if err != nil {
 		if !strings.Contains(err.Error(), "code=-2011") {
 			return err
@@ -215,17 +251,19 @@ const timeShift = 1000
 const hday = 24
 
 /*
-	Получает информацию по свечам symbol[0] (default BTCUSDT)
+	Получает информацию по свечам symbol[0] (default "BTCUSDT")
 */
 func (b *Binance) GetKlines(symbol ...string) (draw.Klines, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTCUSDT")
 	}
-	klines, err := b.client.
-		NewKlinesService().Symbol(symbol[0]).
-		Interval("15m").
-		StartTime(int64(timeShift) * (time.Now().Add(-time.Hour * hday).Unix())).
-		Do(context.Background())
+
+	req := &klinesReq{
+		Symbol:    symbol[0],
+		T:         "15m",
+		StartTime: int64(timeShift) * (time.Now().Add(-time.Hour * hday).Unix()),
+	}
+	klines, err := b.client.GetKlines(req)
 	if err != nil {
 		return draw.Klines{}, err
 	}
