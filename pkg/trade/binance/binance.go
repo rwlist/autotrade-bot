@@ -7,35 +7,24 @@ import (
 
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 
-	"github.com/rwlist/autotrade-bot/pkg/conf"
 	"github.com/rwlist/autotrade-bot/pkg/draw"
 	"github.com/rwlist/autotrade-bot/pkg/tostr"
 
-	goBinance "github.com/adshao/go-binance"
+	gobinance "github.com/adshao/go-binance"
 )
 
 type Binance struct {
 	client Client
 }
 
-/*
-	Создаёт новый Binance
-*/
-func NewBinance(cfg conf.Binance, debug bool) Binance {
-	var cli Client
-	if debug {
-		cli = NewClientLog(cfg.APIKey, cfg.Secret)
-	} else {
-		cli = NewClientDefault(cfg.APIKey, cfg.Secret)
-	}
+// Создаёт новый Binance
+func NewBinance(cli Client) Binance {
 	return Binance{cli}
 }
 
-/*
-	Возвращает информацию по балансу пользователя
-	Вернулась ли информация по конкретной валюте непонятно от чего зависит
-	Возможно возвращается для когда-либо использованных пользователем валют
-*/
+//	Возвращает информацию по балансу пользователя
+//	Вернулась ли информация по конкретной валюте непонятно от чего зависит
+//	Возможно возвращается для когда-либо использованных пользователем валют
 func (b *Binance) AccountBalance() ([]trade.Balance, error) {
 	info, err := b.client.AccountBalance()
 	if err != nil {
@@ -44,9 +33,7 @@ func (b *Binance) AccountBalance() ([]trade.Balance, error) {
 	return convertBalanceSlice(info), err
 }
 
-/*
-	Возвращает баланс для конкретной валюты
-*/
+//	Возвращает баланс для конкретной валюты
 func (b *Binance) AccountSymbolBalance(symbol string) (float64, error) {
 	info, err := b.client.AccountBalance()
 	if err != nil {
@@ -60,9 +47,7 @@ func (b *Binance) AccountSymbolBalance(symbol string) (float64, error) {
 	return 0, nil
 }
 
-/*
-	Получает баланс какой-то валюты, смотрит на курс валюты к USDT и возвращает баланс в USDT
-*/
+//	Получает баланс какой-то валюты, смотрит на курс валюты к USDT и возвращает баланс в USDT
 func (b *Binance) BalanceToUSD(bal *trade.Balance) (float64, error) {
 	haveFree := tostr.StrToFloat64(bal.Free)
 	haveLocked := tostr.StrToFloat64(bal.Locked)
@@ -83,9 +68,7 @@ func (b *Binance) BalanceToUSD(bal *trade.Balance) (float64, error) {
 	return haveFree + haveLocked, nil
 }
 
-/*
-	Возвращает текущий курс symbol[0] (default BTCUSDT)
-*/
+//	Возвращает текущий курс symbol[0] (default BTCUSDT)
 func (b *Binance) GetRate(symbol ...string) (string, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTCUSDT")
@@ -97,10 +80,8 @@ func (b *Binance) GetRate(symbol ...string) (string, error) {
 	return symbolPrice[0].Price, nil
 }
 
-/*
-	Закупается symbol[0] (default BTC) на все symbol[1] (default USDT)
-	Возвращает nil, true, nil если закуплено на все деньги
-*/
+//	Закупается symbol[0] (default BTC) на все symbol[1] (default USDT)
+//	Возвращает nil, true, nil если закуплено на все деньги
 func (b *Binance) BuyAll(symbol ...string) *trade.Status {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
@@ -125,9 +106,9 @@ func (b *Binance) BuyAll(symbol ...string) *trade.Status {
 
 	req := &orderReq{
 		Symbol:   symbol[0] + symbol[1],
-		Side:     goBinance.SideTypeBuy,
-		Type:     goBinance.OrderTypeLimit,
-		Tif:      goBinance.TimeInForceTypeGTC,
+		Side:     gobinance.SideTypeBuy,
+		Type:     gobinance.OrderTypeLimit,
+		Tif:      gobinance.TimeInForceTypeGTC,
 		Price:    price,
 		Quantity: tostr.Float64ToStr(quantity, 6),
 	}
@@ -154,10 +135,8 @@ func (b *Binance) BuyAll(symbol ...string) *trade.Status {
 	}
 }
 
-/*
-	Продаёт все symbol[0] (default BTC) за symbol[1] (default USDT)
-	Возвращает nil, true, nil если всё продано
-*/
+//	Продаёт все symbol[0] (default BTC) за symbol[1] (default USDT)
+//	Возвращает nil, true, nil если всё продано
 func (b *Binance) SellAll(symbol ...string) *trade.Status {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTC", "USDT")
@@ -181,9 +160,9 @@ func (b *Binance) SellAll(symbol ...string) *trade.Status {
 
 	req := &orderReq{
 		Symbol:   symbol[0] + symbol[1],
-		Side:     goBinance.SideTypeSell,
-		Type:     goBinance.OrderTypeLimit,
-		Tif:      goBinance.TimeInForceTypeGTC,
+		Side:     gobinance.SideTypeSell,
+		Type:     gobinance.OrderTypeLimit,
+		Tif:      gobinance.TimeInForceTypeGTC,
 		Price:    price,
 		Quantity: tostr.Float64ToStr(quantity, 6),
 	}
@@ -210,9 +189,7 @@ func (b *Binance) SellAll(symbol ...string) *trade.Status {
 	}
 }
 
-/*
-	Получает информацию по ордеру для пары symbol[0] ("BTCUSDT") с данным id
-*/
+//	Получает информацию по ордеру для пары symbol[0] ("BTCUSDT") с данным id
 func (b *Binance) GetOrder(id int64, symbol ...string) (*trade.Order, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTCUSDT")
@@ -226,9 +203,7 @@ func (b *Binance) GetOrder(id int64, symbol ...string) (*trade.Order, error) {
 	return convertOrderToOrder(order), err
 }
 
-/*
-	Закрывает ордер с данным id для пары symbol[0] ("BTCUSDT")
-*/
+//	Закрывает ордер с данным id для пары symbol[0] ("BTCUSDT")
 func (b *Binance) CancelOrder(id int64, symbol ...string) error {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTCUSDT")
@@ -250,9 +225,7 @@ func (b *Binance) CancelOrder(id int64, symbol ...string) error {
 const timeShift = 1000
 const hday = 24
 
-/*
-	Получает информацию по свечам symbol[0] (default "BTCUSDT")
-*/
+//	Получает информацию по свечам symbol[0] (default "BTCUSDT")
 func (b *Binance) GetKlines(symbol ...string) (draw.Klines, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, "BTCUSDT")

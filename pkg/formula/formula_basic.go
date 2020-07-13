@@ -11,11 +11,9 @@ import (
 const patternFloat = `[0-9]+\.?[0-9]*`
 const patternBasic = `(rate)-[0-9]+\.?[0-9]*\+[0-9]+\.?[0-9]*\*\((now)-(start)\)\^[0-9]+\.?[0-9]*`
 
-/*
-	Базовая функция удовлетворяющая интерфейсу Formula
-	Имеет вид rate-10+0.0002*(now-start)^1.2
-	Парсится через regexp patternBasic
-*/
+//	Базовая функция удовлетворяющая интерфейсу Formula
+//	Имеет вид rate-10+0.0002*(now-start)^1.2
+//	Парсится через regexp patternBasic
 type Basic struct {
 	rate, start float64   // значения rate и start
 	coef        []float64 // Числовые коэффициенты
@@ -36,10 +34,8 @@ func (f *Basic) Rate() float64 {
 
 const cntCoef = 3
 
-/*
-	По заданной строке определяется является ли она формулой этого вида
-	Создаёт и возвращает указатель на структуру, если да
-*/
+//	По заданной строке определяется является ли она формулой этого вида
+//	Создаёт и возвращает указатель на структуру, если да
 func NewBasic(s string, rate, start float64) (*Basic, error) {
 	re := regexp.MustCompile(patternBasic)
 	s = re.FindString(s)

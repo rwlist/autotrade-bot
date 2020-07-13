@@ -1,15 +1,14 @@
 package binance
 
 import (
-	"context"
 	"time"
 
-	goBinance "github.com/adshao/go-binance"
+	gobinance "github.com/adshao/go-binance"
 	log "github.com/sirupsen/logrus"
 )
 
 type CliLog struct {
-	client *goBinance.Client
+	client Client
 }
 
 func (b *CliLog) log(method string, req, resp interface{}, err error, start time.Time) {
@@ -27,97 +26,86 @@ func (b *CliLog) log(method string, req, resp interface{}, err error, start time
 	logger.Debug("binance request finished")
 }
 
-func NewClientLog(apiKey, secretKey string) *CliLog {
+func NewClientLog(cli Client) *CliLog {
 	return &CliLog{
-		client: goBinance.NewClient(apiKey, secretKey),
+		client: cli,
 	}
 }
 
-func (b *CliLog) AccountBalance() ([]goBinance.Balance, error) {
+func (b *CliLog) AccountBalance() ([]gobinance.Balance, error) {
 	start := time.Now()
 
-	info, err := b.client.NewGetAccountService().Do(context.Background())
-	b.log("AccountBalance", nil, info, err, start)
+	info, err := b.client.AccountBalance()
+	b.log("AccountBalance", nil, info != nil, err, start)
 
 	if err != nil {
 		return nil, err
 	}
-	return info.Balances, err
+
+	return info, nil
 }
 
-func (b *CliLog) ListPrices(symbol string) ([]*goBinance.SymbolPrice, error) {
+func (b *CliLog) ListPrices(symbol string) ([]*gobinance.SymbolPrice, error) {
 	start := time.Now()
 
-	list, err := b.client.NewListPricesService().Symbol(symbol).Do(context.Background())
+	list, err := b.client.ListPrices(symbol)
 	b.log("ListPrices", symbol, list, err, start)
 
 	if err != nil {
 		return nil, err
 	}
+
 	return list, nil
 }
 
-func (b *CliLog) CreateOrder(req *orderReq) (*goBinance.CreateOrderResponse, error) {
+func (b *CliLog) CreateOrder(req *orderReq) (*gobinance.CreateOrderResponse, error) {
 	start := time.Now()
 
-	order, err := b.client.NewCreateOrderService().
-		Symbol(req.Symbol).
-		Side(req.Side).
-		Type(req.Type).
-		TimeInForce(goBinance.TimeInForceTypeGTC).
-		Price(req.Price).
-		Quantity(req.Quantity).Do(context.Background())
+	order, err := b.client.CreateOrder(req)
 	b.log("CreateOrder", req, order, err, start)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return order, err
+	return order, nil
 }
 
-func (b *CliLog) GetOrder(req *orderID) (*goBinance.Order, error) {
+func (b *CliLog) GetOrder(req *orderID) (*gobinance.Order, error) {
 	start := time.Now()
 
-	order, err := b.client.NewGetOrderService().
-		Symbol(req.Symbol).
-		OrderID(req.ID).Do(context.Background())
+	order, err := b.client.GetOrder(req)
 	b.log("GetOrder", req, order, err, start)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return order, err
+	return order, nil
 }
 
-func (b *CliLog) CancelOrder(req *orderID) (*goBinance.CancelOrderResponse, error) {
+func (b *CliLog) CancelOrder(req *orderID) (*gobinance.CancelOrderResponse, error) {
 	start := time.Now()
 
-	res, err := b.client.NewCancelOrderService().
-		Symbol(req.Symbol).
-		OrderID(req.ID).Do(context.Background())
+	res, err := b.client.CancelOrder(req)
 	b.log("CancelOrder", req, res, err, start)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return res, err
+	return res, nil
 }
 
-func (b *CliLog) GetKlines(req *klinesReq) ([]*goBinance.Kline, error) {
+func (b *CliLog) GetKlines(req *klinesReq) ([]*gobinance.Kline, error) {
 	start := time.Now()
 
-	klines, err := b.client.NewKlinesService().
-		Symbol(req.Symbol).
-		Interval(req.T).
-		StartTime(req.StartTime).Do(context.Background())
+	klines, err := b.client.GetKlines(req)
 	b.log("GetKlines", req, klines, err, start)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return klines, err
+	return klines, nil
 }

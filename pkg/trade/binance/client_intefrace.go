@@ -1,21 +1,21 @@
 package binance
 
-import goBinance "github.com/adshao/go-binance"
+import gobinance "github.com/adshao/go-binance"
 
 type Client interface {
-	AccountBalance() ([]goBinance.Balance, error)
-	ListPrices(symbol string) ([]*goBinance.SymbolPrice, error)
-	CreateOrder(req *orderReq) (*goBinance.CreateOrderResponse, error)
-	GetOrder(req *orderID) (*goBinance.Order, error)
-	CancelOrder(req *orderID) (*goBinance.CancelOrderResponse, error)
-	GetKlines(req *klinesReq) ([]*goBinance.Kline, error)
+	AccountBalance() ([]gobinance.Balance, error)
+	ListPrices(symbol string) ([]*gobinance.SymbolPrice, error)
+	CreateOrder(req *orderReq) (*gobinance.CreateOrderResponse, error)
+	GetOrder(req *orderID) (*gobinance.Order, error)
+	CancelOrder(req *orderID) (*gobinance.CancelOrderResponse, error)
+	GetKlines(req *klinesReq) ([]*gobinance.Kline, error)
 }
 
 type orderReq struct {
 	Symbol   string
-	Side     goBinance.SideType
-	Type     goBinance.OrderType
-	Tif      goBinance.TimeInForceType
+	Side     gobinance.SideType
+	Type     gobinance.OrderType
+	Tif      gobinance.TimeInForceType
 	Price    string
 	Quantity string
 }

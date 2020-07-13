@@ -16,10 +16,12 @@ import (
 	"github.com/rwlist/autotrade-bot/pkg/app"
 	"github.com/rwlist/autotrade-bot/pkg/conf"
 	"github.com/rwlist/autotrade-bot/pkg/trade/binance"
+
+	gobinance "github.com/adshao/go-binance"
 )
 
 func main() {
-	log.SetFormatter(&log.JSONFormatter{PrettyPrint: true})
+	log.SetFormatter(&log.JSONFormatter{})
 
 	log.SetReportCaller(true)
 	log.SetLevel(log.DebugLevel)
@@ -28,6 +30,8 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("in conf.ParseEnv()")
 	}
+
+	log.SetFormatter(&log.JSONFormatter{PrettyPrint: cfg.Bot.PrettyPrint})
 
 	bot := telegram.NewBotWithOpts(cfg.Bot.Token, &telegram.Opts{
 		Middleware: func(handler telegram.RequestHandler) telegram.RequestHandler {
@@ -51,7 +55,13 @@ func main() {
 		log.WithError(err).Fatal("in updates.StartPolling()")
 	}
 
-	myBinance := binance.NewBinance(cfg.Binance, cfg.Binance.Debug)
+	var cli binance.Client
+	cli = binance.NewClientDefault(gobinance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret))
+	if cfg.Binance.Debug {
+		cli = binance.NewClientLog(cli)
+	}
+
+	myBinance := binance.NewBinance(cli)
 
 	tr, err := trigger.NewTrigger(myBinance)
 	if err != nil {

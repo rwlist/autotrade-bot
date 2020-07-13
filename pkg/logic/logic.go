@@ -127,10 +127,8 @@ type FormulaStatus struct {
 	Err error
 }
 
-/*
-	Если формула уже есть, то работает с ней. (Если trigger активен, то считается, что она есть)
-	Если формул нет, то парсит из строки и обновляет trigger.
-*/
+//	Если формула уже есть, то работает с ней. (Если trigger активен, то считается, что она есть)
+//	Если формул нет, то парсит из строки и обновляет trigger.
 func (l *Logic) Fstat(str string) *FormulaStatus {
 	f := l.ft.GetFormula()
 	if !l.ft.IsActive() {

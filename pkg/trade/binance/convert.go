@@ -1,11 +1,11 @@
 package binance
 
 import (
-	goBinance "github.com/adshao/go-binance"
+	gobinance "github.com/adshao/go-binance"
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 )
 
-func convertBalance(bal *goBinance.Balance) trade.Balance {
+func convertBalance(bal *gobinance.Balance) trade.Balance {
 	return trade.Balance{
 		Asset:  bal.Asset,
 		Free:   bal.Free,
@@ -13,7 +13,7 @@ func convertBalance(bal *goBinance.Balance) trade.Balance {
 	}
 }
 
-func convertBalanceSlice(bal []goBinance.Balance) []trade.Balance {
+func convertBalanceSlice(bal []gobinance.Balance) []trade.Balance {
 	var newBal []trade.Balance
 	for _, val := range bal {
 		val := val
