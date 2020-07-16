@@ -1,11 +1,10 @@
 package draw
 
 import (
-	"fmt"
 	"image/color"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/tostr"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -17,19 +16,7 @@ func (AllTimeTicks) Ticks(min, max float64) []plot.Tick {
 	tks := plot.DefaultTicks{}.Ticks(min, max)
 	for i, t := range tks {
 		ut := time.Unix(int64(t.Value), 0)
-		d := tostr.Str(ut.Day())
-		h := tostr.Str(ut.Hour())
-		m := tostr.Str(ut.Minute())
-		if len(d) == 1 {
-			d = "0" + d
-		}
-		if len(h) == 1 {
-			h = "0" + h
-		}
-		if len(m) == 1 {
-			m = "0" + m
-		}
-		tks[i].Label = fmt.Sprintf("%v.%v\n%v:%v", d, ut.Month(), h, m)
+		tks[i].Label = ut.Format("02.01\n15:04")
 	}
 	return tks
 }
