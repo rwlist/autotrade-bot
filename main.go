@@ -72,7 +72,7 @@ func main() {
 		bot,
 		cfg,
 		app.Services{
-			Logic:  logic.NewLogic(&myBinance, &tr),
+			Logic:  logic.NewLogic(&myBinance, &tr, cfg.Bot.IsTest),
 			Status: stat.New(myBinance),
 		},
 	)

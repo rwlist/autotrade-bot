@@ -16,11 +16,16 @@ func orderStatusMessage(order *trade.Order) string {
 	return fmt.Sprintf("Side: %v\nDone %v / %v\nStatus: %v", order.Side, order.ExecutedQuantity, order.OrigQuantity, order.Status)
 }
 
-func triggerResponseMessage(resp *trigger.Response) string {
+func triggerResponseMessage(resp *trigger.Response, isTest bool) string {
+	testTxt := "РЕЖИМ ТОРГОВЛИ ВКЛЮЧЕН"
+	if isTest {
+		testTxt = "ТЕСТОВЫЙ РЕЖИМ ВКЛЮЧЕН"
+	}
 	return fmt.Sprintf("Current rate: %v\nFormula rate: %.2f\n\n"+
 		"Absolute difference: %.2f\nRelative difference: %.2f%%\n\n"+
 		"Start rate: %v\nRelative profit: %.2f%%\nAbsolute profit: %.2f\n\n"+
-		"Error: %v\nUpdate time: %v",
+		"Error: %v\nUpdate time: %v\n\n"+
+		testTxt,
 		resp.CurRate, resp.FormulaRate, resp.AbsDif, resp.RelDif, resp.StartRate, resp.RelProfit, resp.AbsProfit,
 		resp.Err, resp.T.Format("02.01.2006 15.04.05"))
 }

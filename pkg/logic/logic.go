@@ -17,15 +17,24 @@ import (
 )
 
 type Logic struct {
-	b  trade.IExchange
-	ft *trigger.FormulaTrigger
+	b      trade.IExchange
+	ft     *trigger.FormulaTrigger
+	isTest bool
 }
 
-func NewLogic(b trade.IExchange, ft *trigger.FormulaTrigger) *Logic {
+func NewLogic(b trade.IExchange, ft *trigger.FormulaTrigger, isTest bool) *Logic {
 	return &Logic{
-		b:  b,
-		ft: ft,
+		b:      b,
+		ft:     ft,
+		isTest: isTest, // default value is false
 	}
+}
+
+func (l *Logic) SafeTestModeSwitch() bool {
+	if !l.ft.IsActive() {
+		l.isTest = !l.isTest
+	}
+	return l.isTest
 }
 
 const sleepDur = 500 * time.Millisecond
@@ -101,13 +110,7 @@ func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func (l *Logic) Begin(s Sender, str string, isTest bool) error {
-	if !isTest {
-		err := l.Buy(s)
-		if err != nil {
-			return fmt.Errorf("in logic.Buy: %w", err)
-		}
-	}
+func (l *Logic) Begin(s Sender, str string) error {
 	rate, err := l.b.GetRate()
 	if err != nil {
 		return fmt.Errorf("in binance.GetRate: %w", err)
@@ -116,8 +119,17 @@ func (l *Logic) Begin(s Sender, str string, isTest bool) error {
 	if err != nil {
 		return fmt.Errorf("in formula.NewBasic: %w", err)
 	}
+
+	isTest := l.isTest
+	if !isTest {
+		err := l.Buy(s)
+		if err != nil {
+			return fmt.Errorf("in logic.Buy: %w", err)
+		}
+	}
+
 	l.ft.Begin(f)
-	go l.checkLoop(s, isTest)
+	go l.checkLoop(s)
 	return nil
 }
 
@@ -130,6 +142,8 @@ type FormulaStatus struct {
 //	Если формула уже есть, то работает с ней. (Если trigger активен, то считается, что она есть)
 //	Если формул нет, то парсит из строки и обновляет trigger.
 func (l *Logic) Fstat(str string) *FormulaStatus {
+	isTest := l.isTest
+
 	f := l.ft.GetFormula()
 	if !l.ft.IsActive() {
 		if f == nil {
@@ -153,6 +167,7 @@ func (l *Logic) Fstat(str string) *FormulaStatus {
 		}
 		l.ft.UpdResponse()
 	}
+
 	resp := l.ft.GetResponse()
 	b, err := l.Draw("", f)
 	if err != nil {
@@ -163,7 +178,7 @@ func (l *Logic) Fstat(str string) *FormulaStatus {
 		}
 	}
 	return &FormulaStatus{
-		Txt: triggerResponseMessage(&resp),
+		Txt: triggerResponseMessage(&resp, isTest),
 		B:   b,
 		Err: nil,
 	}
@@ -171,19 +186,21 @@ func (l *Logic) Fstat(str string) *FormulaStatus {
 
 const smallPeriod = int64(time.Minute / trigger.TimeSleep)
 
-func (l *Logic) checkLoop(s Sender, isTest bool) {
+func (l *Logic) checkLoop(s Sender) {
+	isTest := l.isTest
+
 	var cnt, period int64 = 0, 30
 	f := l.ft.GetFormula()
 	for range l.ft.Ping {
 		resp := l.ft.GetResponse()
 		if cnt%period == 0 {
-			s.Send(triggerResponseMessage(&resp))
+			s.Send(triggerResponseMessage(&resp, isTest))
 			b, _ := l.Draw("", f)
 			s.SendPhoto("graph.png", b)
 		}
 		if resp.AbsDif < 0 {
-			s.Send(triggerResponseMessage(&resp))
-			err := l.End(s, isTest)
+			s.Send(triggerResponseMessage(&resp, isTest))
+			err := l.End(s)
 			if err != nil {
 				s.Send(fmt.Sprintf("command end error: %v", err))
 				log.WithError(err).Error("command end error")
@@ -199,7 +216,8 @@ func (l *Logic) checkLoop(s Sender, isTest bool) {
 	}
 }
 
-func (l *Logic) End(s Sender, isTest bool) error {
+func (l *Logic) End(s Sender) error {
+	isTest := l.isTest
 	if !isTest {
 		err := l.Sell(s)
 		if err != nil {

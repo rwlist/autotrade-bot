@@ -15,10 +15,9 @@ import (
 )
 
 type Handler struct {
-	bot    *telegram.Bot
-	cfg    *conf.Struct
-	svc    Services
-	isTest bool
+	bot *telegram.Bot
+	cfg *conf.Struct
+	svc Services
 }
 
 type Services struct {
@@ -28,10 +27,9 @@ type Services struct {
 
 func NewHandler(bot *telegram.Bot, cfg *conf.Struct, svc Services) *Handler {
 	return &Handler{
-		bot:    bot,
-		cfg:    cfg,
-		svc:    svc,
-		isTest: true,
+		bot: bot,
+		cfg: cfg,
+		svc: svc,
 	}
 }
 
