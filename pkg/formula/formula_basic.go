@@ -2,6 +2,7 @@ package formula
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"regexp"
 
@@ -17,6 +18,10 @@ const patternBasic = `(rate)-[0-9]+\.?[0-9]*\+[0-9]+\.?[0-9]*\*\((now)-(start)\)
 type Basic struct {
 	rate, start float64   // значения rate и start
 	coef        []float64 // Числовые коэффициенты
+}
+
+func (f *Basic) String() string {
+	return fmt.Sprintf("rate-%f+%f*(now-start)^%f", f.coef[0], f.coef[1], f.coef[2])
 }
 
 // Calc(now) Вычисляет значение в точке now

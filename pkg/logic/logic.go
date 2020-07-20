@@ -177,8 +177,12 @@ func (l *Logic) Fstat(str string) *FormulaStatus {
 			Err: fmt.Errorf("in logic.Draw: %w", err),
 		}
 	}
+	info := infoToSend{
+		resp:   &resp,
+		isTest: isTest,
+	}
 	return &FormulaStatus{
-		Txt: triggerResponseMessage(&resp, isTest),
+		Txt: triggerResponseMessage(info),
 		B:   b,
 		Err: nil,
 	}
@@ -194,12 +198,20 @@ func (l *Logic) checkLoop(s Sender) {
 	for range l.ft.Ping {
 		resp := l.ft.GetResponse()
 		if cnt%period == 0 {
-			s.Send(triggerResponseMessage(&resp, isTest))
+			info := infoToSend{
+				resp:   &resp,
+				isTest: isTest,
+			}
+			s.Send(triggerResponseMessage(info))
 			b, _ := l.Draw("", f)
 			s.SendPhoto("graph.png", b)
 		}
 		if resp.AbsDif < 0 {
-			s.Send(triggerResponseMessage(&resp, isTest))
+			info := infoToSend{
+				resp:   &resp,
+				isTest: isTest,
+			}
+			s.Send(triggerResponseMessage(info))
 			err := l.End(s)
 			if err != nil {
 				s.Send(fmt.Sprintf("command end error: %v", err))
