@@ -20,6 +20,7 @@ type Response struct {
 	RelProfit   float64
 	T           time.Time
 	Err         error
+	Formula     string
 }
 
 func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
@@ -37,6 +38,7 @@ func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
 		AbsProfit:   absProf,
 		RelProfit:   relProf,
 		T:           time.Now(),
+		Formula:     ft.formula.String(),
 	}
 }
 
@@ -105,8 +107,9 @@ func (ft *FormulaTrigger) check() *Response {
 	rate, err := ft.b.GetRate()
 	if err != nil {
 		return &Response{
-			Err: fmt.Errorf("binance.GetRate error: %w: ", err),
-			T:   time.Now(),
+			Err:     fmt.Errorf("binance.GetRate error: %w: ", err),
+			T:       time.Now(),
+			Formula: ft.formula.String(),
 		}
 	}
 	return ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(float64(t)))

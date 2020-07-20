@@ -13,4 +13,5 @@ type Formula interface {
 	Calc(now float64) float64 // Возвращает значение в точке now
 	Start() float64           // Возвращает значение параметра start
 	Rate() float64            // Возвращает значение параметра rate
+	String() string           // Возвращает формулу в виде строки
 }
