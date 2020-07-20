@@ -108,7 +108,7 @@ func (h *Handler) commandDraw(chatID int, str string) {
 }
 
 func (h *Handler) commandBegin(chatID int, str string) {
-	err := h.svc.Logic.Begin(&Sender{h.bot, chatID}, str, h.isTest)
+	err := h.svc.Logic.Begin(&Sender{h.bot, chatID}, str)
 	if err != nil {
 		log.WithError(err).Error("command begin error")
 		err = fmt.Errorf("command begin error: %w: ", err)
@@ -118,7 +118,7 @@ func (h *Handler) commandBegin(chatID int, str string) {
 }
 
 func (h *Handler) commandEnd(chatID int) {
-	err := h.svc.Logic.End(&Sender{h.bot, chatID}, h.isTest)
+	err := h.svc.Logic.End(&Sender{h.bot, chatID})
 	if err != nil {
 		log.WithError(err).Error("command end error")
 		err = fmt.Errorf("command end error: %w: ", err)
@@ -145,8 +145,8 @@ func (h *Handler) commandNotFound(chatID int) {
 }
 
 func (h *Handler) commandTestModeSwitch(chatID int) {
-	h.isTest = !h.isTest
-	if h.isTest {
+	cur := h.svc.Logic.SafeTestModeSwitch()
+	if cur {
 		h.sendMessage(chatID, "Testmode is ON!")
 	} else {
 		h.sendMessage(chatID, "Testmode is OFF!\nNow, be careful")
@@ -165,6 +165,8 @@ func (h *Handler) commandHelp(chatID int) {
 /begin <formula> buys BTC with all USDT, activates trigger 
 /end    deactivates trigger and sells all BTC
 /fstat 	draws graph and sends status message
+/testSwitch activates/deactivates test mode (only for begin/end commands, trigger must be deactivated). 
+			While test mode is active begin/end commands won't place buy/sell orders
 `
 
 	h.sendMessage(chatID, str)
