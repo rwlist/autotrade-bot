@@ -3,7 +3,6 @@ package binance
 import (
 	"math"
 	"strings"
-	"time"
 
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 
@@ -15,11 +14,16 @@ import (
 
 type Binance struct {
 	client Client
+	opts   *trade.Opts
 }
 
 // Создаёт новый Binance
 func NewBinance(cli Client) Binance {
-	return Binance{cli}
+	opts := trade.Opts{
+		Symbol: "BTCUSDT", // default "BTCUSDT"
+		Scale:  "15m",     // default "15m"
+	}
+	return Binance{cli, &opts}
 }
 
 //	Возвращает информацию по балансу пользователя
@@ -71,7 +75,7 @@ func (b *Binance) BalanceToUSD(bal *trade.Balance) (float64, error) {
 //	Возвращает текущий курс symbol[0] (default BTCUSDT)
 func (b *Binance) GetRate(symbol ...string) (string, error) {
 	if len(symbol) == 0 {
-		symbol = append(symbol, "BTCUSDT")
+		symbol = append(symbol, b.opts.Symbol)
 	}
 	symbolPrice, err := b.client.ListPrices(symbol[0])
 	if err != nil {
@@ -192,7 +196,7 @@ func (b *Binance) SellAll(symbol ...string) *trade.Status {
 //	Получает информацию по ордеру для пары symbol[0] ("BTCUSDT") с данным id
 func (b *Binance) GetOrder(id int64, symbol ...string) (*trade.Order, error) {
 	if len(symbol) == 0 {
-		symbol = append(symbol, "BTCUSDT")
+		symbol = append(symbol, b.opts.Symbol)
 	}
 
 	req := &orderID{
@@ -206,7 +210,7 @@ func (b *Binance) GetOrder(id int64, symbol ...string) (*trade.Order, error) {
 //	Закрывает ордер с данным id для пары symbol[0] ("BTCUSDT")
 func (b *Binance) CancelOrder(id int64, symbol ...string) error {
 	if len(symbol) == 0 {
-		symbol = append(symbol, "BTCUSDT")
+		symbol = append(symbol, b.opts.Symbol)
 	}
 
 	req := &orderID{
@@ -222,23 +226,20 @@ func (b *Binance) CancelOrder(id int64, symbol ...string) error {
 	return nil
 }
 
-const timeShift = 1000
-const hday = 24
-
-//	Получает информацию по свечам symbol[0] (default "BTCUSDT")
-func (b *Binance) GetKlines(symbol ...string) (draw.Klines, error) {
-	if len(symbol) == 0 {
-		symbol = append(symbol, "BTCUSDT")
+//	Получает информацию по свечам (default "BTCUSDT", "15m")
+func (b *Binance) GetKlines(opts ...draw.KlinesOpts) (*draw.Klines, error) {
+	if len(opts) == 0 {
+		opts = append(opts, b.klinesOpts())
 	}
 
 	req := &klinesReq{
-		Symbol:    symbol[0],
-		T:         "15m",
-		StartTime: int64(timeShift) * (time.Now().Add(-time.Hour * hday).Unix()),
+		Symbol:    opts[0].Symbol,
+		T:         opts[0].T,
+		StartTime: calcStartTime(opts[0].T),
 	}
 	klines, err := b.client.GetKlines(req)
 	if err != nil {
-		return draw.Klines{}, err
+		return nil, err
 	}
 
 	var result draw.Klines
@@ -260,9 +261,13 @@ func (b *Binance) GetKlines(symbol ...string) (draw.Klines, error) {
 	}
 	result.Last = tostr.StrToFloat64(klines[len(klines)-1].Close)
 	result.StartTime = float64(klines[0].OpenTime / timeShift)
-	return result, nil
+	return &result, nil
 }
 
-func sum(str1, str2 string) float64 {
-	return tostr.StrToFloat64(str1) + tostr.StrToFloat64(str2)
+func (b *Binance) SetScale(scale string) {
+	b.opts.Scale = scale
+}
+
+func (b *Binance) SetSymbol(symbol string) {
+	b.opts.Symbol = symbol
 }

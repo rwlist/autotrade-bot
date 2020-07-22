@@ -11,5 +11,7 @@ type IExchange interface {
 	SellAll(symbol ...string) *Status
 	GetOrder(id int64, symbol ...string) (*Order, error)
 	CancelOrder(id int64, symbol ...string) error
-	GetKlines(symbol ...string) (draw.Klines, error)
+	GetKlines(opts ...draw.KlinesOpts) (*draw.Klines, error)
+	SetScale(scale string)
+	SetSymbol(symbol string)
 }

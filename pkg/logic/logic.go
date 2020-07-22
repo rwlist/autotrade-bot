@@ -37,6 +37,10 @@ func (l *Logic) SafeTestModeSwitch() bool {
 	return l.isTest
 }
 
+func (l *Logic) SetScale(scale string) {
+	l.b.SetScale(scale)
+}
+
 const sleepDur = 500 * time.Millisecond
 
 func (l *Logic) Buy(s Sender) error {
@@ -93,15 +97,16 @@ func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 
 	p.AddRateGraph(klines)
 
-	yMax := klines.Max + math.Sqrt(klines.Max)
+	yMax := klines.Max + math.Log(klines.Max)
+	xMax := 2*float64(time.Now().Unix()) - klines.StartTime
 	if optF == nil {
 		f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
 		if err != nil {
 			return nil, fmt.Errorf("in formula.NewBasic: %w", err)
 		}
-		p.AddFunction(f, yMax)
+		p.AddFunction(f, yMax, xMax)
 	} else {
-		p.AddFunction(optF, yMax)
+		p.AddFunction(optF, yMax, xMax)
 	}
 	buffer, err := p.SaveToBuffer()
 	if err != nil {

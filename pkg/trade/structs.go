@@ -21,3 +21,8 @@ type Balance struct {
 	Free   string `json:"free"`
 	Locked string `json:"locked"`
 }
+
+type Opts struct {
+	Symbol string
+	Scale  string
+}
