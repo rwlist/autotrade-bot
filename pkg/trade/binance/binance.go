@@ -261,6 +261,7 @@ func (b *Binance) GetKlines(opts ...draw.KlinesOpts) (*draw.Klines, error) {
 	}
 	result.Last = tostr.StrToFloat64(klines[len(klines)-1].Close)
 	result.StartTime = float64(klines[0].OpenTime / timeShift)
+	result.Scale = opts[0].T
 	return &result, nil
 }
 

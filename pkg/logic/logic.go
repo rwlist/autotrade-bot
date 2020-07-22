@@ -93,6 +93,9 @@ func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 
 	p.AddEnv()
 
+	title := fmt.Sprintf("Scale: %v", klines.Scale)
+	p.Plot.Title.Text = title
+
 	p.AddHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
 
 	p.AddRateGraph(klines)

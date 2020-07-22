@@ -15,6 +15,7 @@ type Klines struct {
 	Min       float64
 	Max       float64
 	StartTime float64
+	Scale     string
 }
 
 func (k *Klines) Len() int {
