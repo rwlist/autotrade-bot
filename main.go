@@ -63,10 +63,7 @@ func main() {
 
 	myBinance := binance.NewBinance(cli)
 
-	tr, err := trigger.NewTrigger(myBinance)
-	if err != nil {
-		log.WithError(err).Fatal("in trigger.NewTrigger")
-	}
+	tr := trigger.NewTrigger(myBinance)
 
 	handler := app.NewHandler(
 		bot,

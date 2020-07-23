@@ -52,18 +52,14 @@ type FormulaTrigger struct {
 	mux     sync.Mutex
 }
 
-func NewTrigger(b binance.Binance) (FormulaTrigger, error) {
-	haveBTC, err := b.AccountSymbolBalance("BTC")
-	if err != nil {
-		haveBTC = 0
-	}
+func NewTrigger(b binance.Binance) FormulaTrigger {
 	return FormulaTrigger{
 		active:  false,
 		Resp:    &Response{},
 		Ping:    make(chan struct{}),
-		haveBTC: haveBTC,
+		haveBTC: 0,
 		b:       b,
-	}, err
+	}
 }
 
 func (ft *FormulaTrigger) IsActive() bool {

@@ -1,16 +1,11 @@
 package formula
 
 import (
-	"errors"
 	"fmt"
 	"math"
-	"regexp"
-
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
 )
 
-const patternFloat = `[0-9]+\.?[0-9]*`
-const patternBasic = `(rate)-[0-9]+\.?[0-9]*\+[0-9]+\.?[0-9]*\*\((now)-(start)\)\^[0-9]+\.?[0-9]*`
+const cntCoef = 3
 
 //	Базовая функция удовлетворяющая интерфейсу Formula
 //	Имеет вид rate-10+0.0002*(now-start)^1.2
@@ -37,28 +32,26 @@ func (f *Basic) Rate() float64 {
 	return f.rate
 }
 
-const cntCoef = 3
-
 //	По заданной строке определяется является ли она формулой этого вида
 //	Создаёт и возвращает указатель на структуру, если да
 func NewBasic(s string, rate, start float64) (*Basic, error) {
-	re := regexp.MustCompile(patternBasic)
-	s = re.FindString(s)
-	if s == "" {
-		return nil, errors.New("invalid formula format")
-	}
-	re = regexp.MustCompile(patternFloat)
-	nums := re.FindAllString(s, -1)
-	if len(nums) != cntCoef {
-		return nil, errors.New("invalid formula format")
-	}
-	var coef []float64
-	for _, val := range nums {
-		coef = append(coef, tostr.StrToFloat64(val))
+	coef, err := parseBasic(s)
+	if err != nil {
+		return nil, err
 	}
 	return &Basic{
 		rate:  rate,
 		start: start,
 		coef:  coef,
 	}, nil
+}
+
+// Меняет формулу сохранняя значения rate и start прежними
+func (f *Basic) Alter(s string) error {
+	coef, err := parseBasic(s)
+	if err != nil {
+		return err
+	}
+	f.coef = coef
+	return nil
 }
