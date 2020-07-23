@@ -15,12 +15,18 @@ type Klines struct {
 	Min       float64
 	Max       float64
 	StartTime float64
+	Scale     string
 }
 
-func (k Klines) Len() int {
+func (k *Klines) Len() int {
 	return len(k.Klines)
 }
 
-func (k Klines) TOHLCV(i int) (t, o, h, l, c, v float64) {
+func (k *Klines) TOHLCV(i int) (t, o, h, l, c, v float64) {
 	return float64(k.Klines[i].T), k.Klines[i].O, k.Klines[i].H, k.Klines[i].L, k.Klines[i].C, k.Klines[i].V
+}
+
+type KlinesOpts struct {
+	Symbol string
+	T      string
 }

@@ -16,38 +16,40 @@ type Plot struct {
 	Plot *plot.Plot
 }
 
-func NewPlot() Plot {
+func NewPlot() *Plot {
 	p, _ := plot.New()
-	return Plot{p}
+	return &Plot{
+		Plot: p,
+	}
 }
 
-func (p Plot) AddEnv() {
+func (p *Plot) AddEnv() {
 	p.Plot.X.Tick.Marker = AllTimeTicks{}
 	p.Plot.Y.Tick.Marker = AllPriceTicks{}
 	p.Plot.Add(plotter.NewGrid())
 }
 
-func (p Plot) AddHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
+func (p *Plot) AddHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
 	p.Plot.Add(MakeHorLine(startTime, lastPrice, 0, 0, 255))
 	p.Plot.Add(MakeHorLine(startTime, minPrice, 255, 0, 0))
 	p.Plot.Add(MakeHorLine(startTime, maxPrice, 0, 255, 0))
 }
 
-func (p Plot) AddFunction(f formula.Formula, yMax float64) {
-	p.Plot.X.Max = f.Start() + secDay
+func (p *Plot) AddFunction(f formula.Formula, yMax, xMax float64) {
 	if yMax == -1 {
 		yMax = f.Calc(f.Start() + secDay)
 	}
+	p.Plot.X.Max = xMax
 	p.Plot.Y.Max = yMax
 	fu := plotter.NewFunction(f.Calc)
 	fu.XMin = f.Start()
-	fu.XMax = f.Start() + secDay
+	fu.XMax = xMax
 	fu.Width = 2
 	fu.Color = color.RGBA{R: 255, B: 0, G: 165, A: 255}
 	p.Plot.Add(fu)
 }
 
-func (p Plot) AddRateGraph(klines Klines) {
+func (p *Plot) AddRateGraph(klines *Klines) {
 	bars, _ := custplotter.NewCandlesticks(klines)
 	bars.ColorUp = color.RGBA{
 		R: 2,
@@ -69,7 +71,7 @@ func (p Plot) AddRateGraph(klines Klines) {
 const DefaultWidth = 900
 const DefaultHeight = 400
 
-func (p Plot) SaveToBuffer() (*bytes.Buffer, error) {
+func (p *Plot) SaveToBuffer() (*bytes.Buffer, error) {
 	w, err := p.Plot.WriterTo(DefaultWidth, DefaultHeight, "png")
 	if err != nil {
 		return nil, err

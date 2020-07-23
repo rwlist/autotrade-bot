@@ -20,6 +20,9 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 	case "/fstat":
 		h.commandFstat(chatID, str)
 
+	case "/setScale":
+		h.commandSetScale(chatID, str)
+
 	case "/testSwitch":
 		h.commandTestModeSwitch(chatID)
 
@@ -153,6 +156,12 @@ func (h *Handler) commandTestModeSwitch(chatID int) {
 	}
 }
 
+func (h *Handler) commandSetScale(chatID int, str string) {
+	h.svc.Logic.SetScale(str)
+	txt := fmt.Sprintf("Graph scale set to %v!", str)
+	h.sendMessage(chatID, txt)
+}
+
 func (h *Handler) commandHelp(chatID int) {
 	str := `Need some help?
 
@@ -165,8 +174,11 @@ func (h *Handler) commandHelp(chatID int) {
 /begin <formula> buys BTC with all USDT, activates trigger 
 /end    deactivates trigger and sells all BTC
 /fstat 	draws graph and sends status message
+
 /testSwitch activates/deactivates test mode (only for begin/end commands, trigger must be deactivated). 
 			While test mode is active begin/end commands won't place buy/sell orders
+
+/setScale sets the graph scale (can be 1m, 3m, 5m, 15m, 30m, 1H, 2H, 4H, 6H, 8H, 12H, 1D, 3D, 1W, 1M). Default 15m
 `
 
 	h.sendMessage(chatID, str)
