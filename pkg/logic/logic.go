@@ -147,14 +147,14 @@ type FormulaStatus struct {
 	Err error
 }
 
-//	Если формула уже есть, то работает с ней. (Если trigger активен, то считается, что она есть)
-//	Если формул нет, то парсит из строки и обновляет trigger.
+//	Если trigger активен, то показывает формулу из него
+//	Если trigger не активен, то парсит из строки (если строки нет, то пытается взять то что осталось в триггере)
 func (l *Logic) Fstat(str string) *FormulaStatus {
 	isTest := l.isTest
 
 	f := l.ft.GetFormula()
 	if !l.ft.IsActive() {
-		if f == nil {
+		if f == nil || str != "" {
 			rate, err := l.b.GetRate()
 			if err != nil {
 				return &FormulaStatus{
@@ -246,5 +246,15 @@ func (l *Logic) End(s Sender) error {
 	}
 	l.ft.End()
 	s.Send("trigger OFF")
+	return nil
+}
+
+func (l *Logic) Alter(s string) error {
+	f := l.ft.GetFormula()
+	err := f.Alter(s)
+	if err != nil {
+		return fmt.Errorf("in logic.Alter: %w", err)
+	}
+	l.ft.UpdFormula(f)
 	return nil
 }

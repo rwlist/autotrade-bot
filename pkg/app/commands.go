@@ -17,6 +17,9 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 		str = cmds[1]
 	}
 	switch cmd {
+	case "/alter":
+		h.commandAlter(chatID, str)
+
 	case "/fstat":
 		h.commandFstat(chatID, str)
 
@@ -162,6 +165,18 @@ func (h *Handler) commandSetScale(chatID int, str string) {
 	h.sendMessage(chatID, txt)
 }
 
+func (h *Handler) commandAlter(chatID int, str string) {
+	err := h.svc.Logic.Alter(str)
+	if err != nil {
+		log.WithError(err).Error("command alter error")
+		err = fmt.Errorf("command alter error: %w: ", err)
+		h.sendMessage(chatID, err.Error())
+		return
+	}
+	txt := fmt.Sprintf("Formula set to %v!", str)
+	h.sendMessage(chatID, txt)
+}
+
 func (h *Handler) commandHelp(chatID int) {
 	str := `Need some help?
 
@@ -173,12 +188,14 @@ func (h *Handler) commandHelp(chatID int) {
 /draw <formula> (example: rate-10+0.0002*(now-start)^1.2) 		draws graph of given formula
 /begin <formula> buys BTC with all USDT, activates trigger 
 /end    deactivates trigger and sells all BTC
-/fstat 	draws graph and sends status message
+/fstat 	draws graph and sends status message 
 
 /testSwitch activates/deactivates test mode (only for begin/end commands, trigger must be deactivated). 
 			While test mode is active begin/end commands won't place buy/sell orders
 
 /setScale sets the graph scale (can be 1m, 3m, 5m, 15m, 30m, 1H, 2H, 4H, 6H, 8H, 12H, 1D, 3D, 1W, 1M). Default 15m
+
+/alter <formula> sets the formula in the trigger to a new without changing of the start point
 `
 
 	h.sendMessage(chatID, str)
