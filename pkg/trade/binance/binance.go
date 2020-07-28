@@ -1,15 +1,15 @@
 package binance
 
 import (
-	"math"
 	"strings"
+
+	"github.com/rwlist/autotrade-bot/pkg/convert"
+	"github.com/shopspring/decimal"
 
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 
-	"github.com/rwlist/autotrade-bot/pkg/draw"
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
-
 	gobinance "github.com/adshao/go-binance"
+	"github.com/rwlist/autotrade-bot/pkg/draw"
 )
 
 type Binance struct {
@@ -38,50 +38,45 @@ func (b *Binance) AccountBalance() ([]trade.Balance, error) {
 }
 
 //	Возвращает баланс для конкретной валюты
-func (b *Binance) AccountSymbolBalance(symbol string) (float64, error) {
+func (b *Binance) AccountSymbolBalance(symbol string) (decimal.Decimal, error) {
 	info, err := b.client.AccountBalance()
 	if err != nil {
-		return 0, err
+		return decimal.Zero, err
 	}
 	for _, bal := range info {
 		if bal.Asset == symbol {
-			return sum(bal.Free, bal.Locked), nil
+			return convert.Sum(bal.Free, bal.Locked), nil
 		}
 	}
-	return 0, nil
+	return decimal.Zero, nil
 }
 
 //	Получает баланс какой-то валюты, смотрит на курс валюты к USDT и возвращает баланс в USDT
-func (b *Binance) BalanceToUSD(bal *trade.Balance) (float64, error) {
-	haveFree := tostr.StrToFloat64(bal.Free)
-	haveLocked := tostr.StrToFloat64(bal.Locked)
-
+func (b *Binance) BalanceToUSD(bal *trade.Balance) (decimal.Decimal, error) {
 	if bal.Asset == "USDT" {
-		return haveFree + haveLocked, nil
+		return decimal.Sum(bal.Free, bal.Locked), nil
 	}
 
 	symbolPrice, err := b.client.ListPrices(bal.Asset + "USDT")
 	if err != nil {
-		return 0, err
+		return decimal.Zero, err
 	}
 
-	price := tostr.StrToFloat64(symbolPrice[0].Price)
-	haveFree *= price
-	haveLocked *= price
+	price := convert.UnsafeDecimal(symbolPrice[0].Price)
 
-	return haveFree + haveLocked, nil
+	return decimal.Sum(bal.Free, bal.Locked).Mul(price), nil
 }
 
 //	Возвращает текущий курс symbol[0] (default BTCUSDT)
-func (b *Binance) GetRate(symbol ...string) (string, error) {
+func (b *Binance) GetRate(symbol ...string) (decimal.Decimal, error) {
 	if len(symbol) == 0 {
 		symbol = append(symbol, b.opts.Symbol)
 	}
 	symbolPrice, err := b.client.ListPrices(symbol[0])
 	if err != nil {
-		return "", err
+		return decimal.Zero, err
 	}
-	return symbolPrice[0].Price, nil
+	return convert.UnsafeDecimal(symbolPrice[0].Price), nil
 }
 
 //	Закупается symbol[0] (default BTC) на все symbol[1] (default USDT)
@@ -98,7 +93,7 @@ func (b *Binance) BuyAll(symbol ...string) *trade.Status {
 			Err:   err,
 		}
 	}
-	usdt, err := b.AccountSymbolBalance(symbol[1])
+	have, err := b.AccountSymbolBalance(symbol[1])
 	if err != nil {
 		return &trade.Status{
 			Order: nil,
@@ -106,15 +101,15 @@ func (b *Binance) BuyAll(symbol ...string) *trade.Status {
 			Err:   err,
 		}
 	}
-	quantity := usdt / tostr.StrToFloat64(price)
+	quantity := have.Div(price)
 
 	req := &orderReq{
 		Symbol:   symbol[0] + symbol[1],
 		Side:     gobinance.SideTypeBuy,
 		Type:     gobinance.OrderTypeLimit,
 		Tif:      gobinance.TimeInForceTypeGTC,
-		Price:    price,
-		Quantity: tostr.Float64ToStr(quantity, 6),
+		Price:    price.String(),
+		Quantity: quantity.Truncate(convert.MoneyTrunc).String(),
 	}
 	order, err := b.client.CreateOrder(req)
 
@@ -167,8 +162,8 @@ func (b *Binance) SellAll(symbol ...string) *trade.Status {
 		Side:     gobinance.SideTypeSell,
 		Type:     gobinance.OrderTypeLimit,
 		Tif:      gobinance.TimeInForceTypeGTC,
-		Price:    price,
-		Quantity: tostr.Float64ToStr(quantity, 6),
+		Price:    price.String(),
+		Quantity: quantity.Truncate(convert.MoneyTrunc).String(),
 	}
 	order, err := b.client.CreateOrder(req)
 
@@ -226,6 +221,8 @@ func (b *Binance) CancelOrder(id int64, symbol ...string) error {
 	return nil
 }
 
+const inf = 1e18
+
 //	Получает информацию по свечам (default "BTCUSDT", "15m")
 func (b *Binance) GetKlines(opts ...draw.KlinesOpts) (*draw.Klines, error) {
 	if len(opts) == 0 {
@@ -245,22 +242,22 @@ func (b *Binance) GetKlines(opts ...draw.KlinesOpts) (*draw.Klines, error) {
 	var result draw.Klines
 
 	// Extracting data from response
-	result.Min = 1000000000.
-	result.Max = -1.
+	result.Min = decimal.NewFromFloat(inf)
+	result.Max = decimal.NewFromInt(-1)
 	for _, val := range klines {
 		result.Klines = append(result.Klines, draw.KlineTOHLCV{
 			T: val.CloseTime / timeShift,
-			O: tostr.StrToFloat64(val.Open),
-			H: tostr.StrToFloat64(val.High),
-			L: tostr.StrToFloat64(val.Low),
-			C: tostr.StrToFloat64(val.Close),
-			V: tostr.StrToFloat64(val.Volume),
+			O: convert.StrToFloat64(val.Open),
+			H: convert.StrToFloat64(val.High),
+			L: convert.StrToFloat64(val.Low),
+			C: convert.StrToFloat64(val.Close),
+			V: convert.StrToFloat64(val.Volume),
 		})
-		result.Min = math.Min(result.Min, tostr.StrToFloat64(val.Low))
-		result.Max = math.Max(result.Max, tostr.StrToFloat64(val.High))
+		result.Min = decimal.Min(result.Min, convert.UnsafeDecimal(val.Low))
+		result.Max = decimal.Max(result.Max, convert.UnsafeDecimal(val.High))
 	}
-	result.Last = tostr.StrToFloat64(klines[len(klines)-1].Close)
-	result.StartTime = float64(klines[0].OpenTime / timeShift)
+	result.Last = convert.UnsafeDecimal(klines[len(klines)-1].Close)
+	result.StartTime = klines[0].OpenTime / timeShift
 	result.Scale = opts[0].T
 	return &result, nil
 }

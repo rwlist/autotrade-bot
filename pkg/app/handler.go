@@ -3,11 +3,11 @@ package app
 import (
 	"strings"
 
+	"github.com/rwlist/autotrade-bot/pkg/convert"
+
 	"github.com/rwlist/autotrade-bot/pkg/logic"
 
 	"github.com/rwlist/autotrade-bot/pkg/stat"
-
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
 
 	"github.com/petuhovskiy/telegram"
 
@@ -48,14 +48,14 @@ func (h *Handler) Handle(upd *telegram.Update) {
 
 func (h *Handler) sendMessage(chatID int, text string) {
 	_, _ = h.bot.SendMessage(&telegram.SendMessageRequest{
-		ChatID: tostr.Str(chatID),
+		ChatID: convert.Str(chatID),
 		Text:   text,
 	})
 }
 
 func (h *Handler) sendPhoto(chatID int, name string, b []byte) {
 	_, _ = h.bot.SendPhoto(&telegram.SendPhotoRequest{
-		ChatID: tostr.Str(chatID),
+		ChatID: convert.Str(chatID),
 		Photo:  NewBytesUploader(name, b),
 	})
 }

@@ -16,12 +16,7 @@ func New(myBinance binance.Binance) *Service {
 }
 
 func (s *Service) Status() (*Status, error) {
-	rateStr, err := s.myBinance.GetRate()
-	if err != nil {
-		return nil, err
-	}
-
-	rate, err := decimal.NewFromString(rateStr)
+	rate, err := s.myBinance.GetRate()
 	if err != nil {
 		return nil, err
 	}
@@ -36,19 +31,18 @@ func (s *Service) Status() (*Status, error) {
 	for _, bal := range allBalances {
 		bal := bal
 		asset := bal.Asset
-		free := unsafeDecimal(bal.Free)
-		locked := unsafeDecimal(bal.Locked)
+		free := bal.Free
+		locked := bal.Locked
 
 		if free.Equal(decimal.Zero) && locked.Equal(decimal.Zero) {
 			continue
 		}
 
-		usdFloat, err := s.myBinance.BalanceToUSD(&bal)
+		balanceInUSD, err := s.myBinance.BalanceToUSD(&bal)
 		if err != nil {
 			return &Status{}, err
 		}
 
-		balanceInUSD := decimal.NewFromFloat(usdFloat)
 		total = total.Add(balanceInUSD)
 
 		balances = append(

@@ -1,4 +1,4 @@
-package tostr
+package convert
 
 import (
 	"fmt"

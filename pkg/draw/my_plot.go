@@ -29,20 +29,20 @@ func (p *Plot) AddEnv() {
 	p.Plot.Add(plotter.NewGrid())
 }
 
-func (p *Plot) AddHelpLines(lastPrice, minPrice, maxPrice, startTime float64) {
-	p.Plot.Add(MakeHorLine(startTime, lastPrice, 0, 0, 255))
-	p.Plot.Add(MakeHorLine(startTime, minPrice, 255, 0, 0))
-	p.Plot.Add(MakeHorLine(startTime, maxPrice, 0, 255, 0))
+func (p *Plot) AddHelpLines(lastPrice, minPrice, maxPrice float64, startTime int64) {
+	p.Plot.Add(MakeHorLine(float64(startTime), lastPrice, 0, 0, 255))
+	p.Plot.Add(MakeHorLine(float64(startTime), minPrice, 255, 0, 0))
+	p.Plot.Add(MakeHorLine(float64(startTime), maxPrice, 0, 255, 0))
 }
 
 func (p *Plot) AddFunction(f formula.Formula, yMax, xMax float64) {
 	if yMax == -1 {
-		yMax = f.Calc(f.Start() + secDay)
+		yMax = f.Calc(float64(f.Start() + secDay))
 	}
 	p.Plot.X.Max = xMax
 	p.Plot.Y.Max = yMax
 	fu := plotter.NewFunction(f.Calc)
-	fu.XMin = f.Start()
+	fu.XMin = float64(f.Start())
 	fu.XMax = xMax
 	fu.Width = 2
 	fu.Color = color.RGBA{R: 255, B: 0, G: 165, A: 255}

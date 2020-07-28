@@ -5,6 +5,9 @@ import (
 	"math"
 	"time"
 
+	"github.com/rwlist/autotrade-bot/pkg/convert"
+	"github.com/shopspring/decimal"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/rwlist/autotrade-bot/pkg/trade"
@@ -13,7 +16,6 @@ import (
 
 	"github.com/rwlist/autotrade-bot/pkg/draw"
 	"github.com/rwlist/autotrade-bot/pkg/formula"
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
 )
 
 type Logic struct {
@@ -96,14 +98,18 @@ func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 	title := fmt.Sprintf("Scale: %v", klines.Scale)
 	p.Plot.Title.Text = title
 
-	p.AddHelpLines(klines.Last, klines.Min, klines.Max, klines.StartTime)
+	p.AddHelpLines(convert.Float64(klines.Last),
+		convert.Float64(klines.Min),
+		convert.Float64(klines.Max),
+		klines.StartTime)
 
 	p.AddRateGraph(klines)
 
-	yMax := klines.Max + math.Log(klines.Max)
-	xMax := 2*float64(time.Now().Unix()) - klines.StartTime
+	kmax := convert.Float64(klines.Max)
+	yMax := kmax + math.Log(kmax)
+	xMax := float64(2*time.Now().Unix() - klines.StartTime)
 	if optF == nil {
-		f, err := formula.NewBasic(str, klines.Last, float64(time.Now().Unix()))
+		f, err := formula.NewBasic(str, klines.Last, time.Now().Unix())
 		if err != nil {
 			return nil, fmt.Errorf("in formula.NewBasic: %w", err)
 		}
@@ -123,7 +129,7 @@ func (l *Logic) Begin(s Sender, str string) error {
 	if err != nil {
 		return fmt.Errorf("in binance.GetRate: %w", err)
 	}
-	f, err := formula.NewBasic(str, tostr.StrToFloat64(rate), float64(time.Now().Unix()))
+	f, err := formula.NewBasic(str, rate, time.Now().Unix())
 	if err != nil {
 		return fmt.Errorf("in formula.NewBasic: %w", err)
 	}
@@ -163,7 +169,7 @@ func (l *Logic) Fstat(str string) *FormulaStatus {
 					Err: fmt.Errorf("in binance.GetRate: %w: ", err),
 				}
 			}
-			f, err = formula.NewBasic(str, tostr.StrToFloat64(rate), float64(time.Now().Unix()))
+			f, err = formula.NewBasic(str, rate, time.Now().Unix())
 			if err != nil {
 				return &FormulaStatus{
 					Txt: "",
@@ -214,20 +220,22 @@ func (l *Logic) checkLoop(s Sender) {
 			b, _ := l.Draw("", f)
 			s.SendPhoto("graph.png", b)
 		}
-		if resp.AbsDif < 0 {
-			info := infoToSend{
-				resp:   &resp,
-				isTest: isTest,
-			}
-			s.Send(triggerResponseMessage(info))
+		if resp.AbsDif.IsNegative() {
 			err := l.End(s)
 			if err != nil {
 				s.Send(fmt.Sprintf("command end error: %v", err))
 				log.WithError(err).Error("command end error")
 			}
+			info := infoToSend{
+				resp:   &resp,
+				isTest: isTest,
+			}
+			s.Send(triggerResponseMessage(info))
+			b, _ := l.Draw("", f)
+			s.SendPhoto("graph.png", b)
 			return
 		}
-		if resp.RelDif < 1 {
+		if resp.RelDif.LessThan(decimal.NewFromInt(1)) {
 			period = smallPeriod
 		} else {
 			period = 5 * smallPeriod
@@ -245,7 +253,7 @@ func (l *Logic) End(s Sender) error {
 		}
 	}
 	l.ft.End()
-	s.Send("trigger OFF")
+	s.Send("DEACTIVATING TRIGGER...")
 	return nil
 }
 
