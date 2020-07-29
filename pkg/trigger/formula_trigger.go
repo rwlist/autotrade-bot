@@ -102,7 +102,7 @@ func (ft *FormulaTrigger) updBTC() {
 const TimeSleep = 10 * time.Second
 
 func (ft *FormulaTrigger) check() *Response {
-	t := time.Now().Unix()
+	t := time.Now()
 	rate, err := ft.b.GetRate()
 	if err != nil {
 		return &Response{
@@ -111,7 +111,7 @@ func (ft *FormulaTrigger) check() *Response {
 			Formula: ft.formula.String(),
 		}
 	}
-	return ft.newResponse(rate, decimal.NewFromFloat(ft.formula.Calc(float64(t))))
+	return ft.newResponse(rate, ft.formula.Calc(t))
 }
 
 func (ft *FormulaTrigger) UpdResponse() {

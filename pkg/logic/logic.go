@@ -101,15 +101,15 @@ func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 	p.AddHelpLines(convert.Float64(klines.Last),
 		convert.Float64(klines.Min),
 		convert.Float64(klines.Max),
-		klines.StartTime)
+		klines.StartTime.Unix())
 
 	p.AddRateGraph(klines)
 
 	kmax := convert.Float64(klines.Max)
 	yMax := kmax + math.Log(kmax)
-	xMax := float64(2*time.Now().Unix() - klines.StartTime)
+	xMax := float64(2*time.Now().Unix() - klines.StartTime.Unix())
 	if optF == nil {
-		f, err := formula.NewBasic(str, klines.Last, time.Now().Unix())
+		f, err := formula.NewBasic(str, klines.Last, time.Now())
 		if err != nil {
 			return nil, fmt.Errorf("in formula.NewBasic: %w", err)
 		}
@@ -129,7 +129,7 @@ func (l *Logic) Begin(s Sender, str string) error {
 	if err != nil {
 		return fmt.Errorf("in binance.GetRate: %w", err)
 	}
-	f, err := formula.NewBasic(str, rate, time.Now().Unix())
+	f, err := formula.NewBasic(str, rate, time.Now())
 	if err != nil {
 		return fmt.Errorf("in formula.NewBasic: %w", err)
 	}
@@ -169,7 +169,7 @@ func (l *Logic) Fstat(str string) *FormulaStatus {
 					Err: fmt.Errorf("in binance.GetRate: %w: ", err),
 				}
 			}
-			f, err = formula.NewBasic(str, rate, time.Now().Unix())
+			f, err = formula.NewBasic(str, rate, time.Now())
 			if err != nil {
 				return &FormulaStatus{
 					Txt: "",

@@ -2,6 +2,7 @@ package formula
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rwlist/autotrade-bot/pkg/convert"
 	"github.com/shopspring/decimal"
@@ -14,28 +15,25 @@ const cntCoef = 3
 //	Парсится через regexp patternBasic
 type Basic struct {
 	rate  decimal.Decimal
-	start int64
+	start time.Time
 	coef  []decimal.Decimal // Числовые коэффициенты
 }
 
 func (f *Basic) String() string {
-	return fmt.Sprintf("rate-%v+%v*(now-start)^%v", f.coef[0].String(), f.coef[1].String(), f.coef[2].String())
+	return fmt.Sprintf("rate-%s+%s*(now-start)^%s", f.coef[0], f.coef[1], f.coef[2])
 }
 
 // Calc(now) Вычисляет значение в точке now
-func (f *Basic) Calc(now float64) float64 {
-	return convert.Float64(f.CalcDec(int64(now)))
-}
-
-func (f *Basic) CalcDec(now int64) decimal.Decimal {
-	brackets := decimal.NewFromInt(now - f.Start())
+func (f *Basic) Calc(now time.Time) decimal.Decimal {
+	t := now.Unix() - f.Start().Unix()
+	brackets := decimal.NewFromInt(t)
 	tmp := f.coef[1].Mul(convert.Pow(brackets, f.coef[2])) // Нужен Pow получше
 	return f.Rate().
 		Sub(f.coef[0]).
 		Add(tmp)
 }
 
-func (f *Basic) Start() int64 {
+func (f *Basic) Start() time.Time {
 	return f.start
 }
 
@@ -45,7 +43,7 @@ func (f *Basic) Rate() decimal.Decimal {
 
 //	По заданной строке определяется является ли она формулой этого вида
 //	Создаёт и возвращает указатель на структуру, если да
-func NewBasic(s string, rate decimal.Decimal, start int64) (*Basic, error) {
+func NewBasic(s string, rate decimal.Decimal, start time.Time) (*Basic, error) {
 	coef, err := parseBasic(s)
 	if err != nil {
 		return nil, err

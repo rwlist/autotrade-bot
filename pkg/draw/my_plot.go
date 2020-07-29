@@ -3,6 +3,9 @@ package draw
 import (
 	"bytes"
 	"image/color"
+	"time"
+
+	"github.com/rwlist/autotrade-bot/pkg/convert"
 
 	"github.com/rwlist/autotrade-bot/pkg/formula"
 
@@ -37,12 +40,15 @@ func (p *Plot) AddHelpLines(lastPrice, minPrice, maxPrice float64, startTime int
 
 func (p *Plot) AddFunction(f formula.Formula, yMax, xMax float64) {
 	if yMax == -1 {
-		yMax = f.Calc(float64(f.Start() + secDay))
+		yMax = convert.Float64(f.Calc(f.Start().Add(secDay)))
 	}
 	p.Plot.X.Max = xMax
 	p.Plot.Y.Max = yMax
-	fu := plotter.NewFunction(f.Calc)
-	fu.XMin = float64(f.Start())
+	lambda := func(x float64) float64 {
+		return convert.Float64(f.Calc(time.Unix(int64(x), 0)))
+	}
+	fu := plotter.NewFunction(lambda)
+	fu.XMin = float64(f.Start().Unix())
 	fu.XMax = xMax
 	fu.Width = 2
 	fu.Color = color.RGBA{R: 255, B: 0, G: 165, A: 255}

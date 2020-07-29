@@ -1,6 +1,10 @@
 package draw
 
-import "github.com/shopspring/decimal"
+import (
+	"time"
+
+	"github.com/shopspring/decimal"
+)
 
 type KlineTOHLCV struct {
 	T int64
@@ -16,7 +20,7 @@ type Klines struct {
 	Last      decimal.Decimal
 	Min       decimal.Decimal
 	Max       decimal.Decimal
-	StartTime int64
+	StartTime time.Time
 	Scale     string
 }
 

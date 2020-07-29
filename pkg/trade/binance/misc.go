@@ -3,6 +3,8 @@ package binance
 import (
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/rwlist/autotrade-bot/pkg/convert"
 
 	"github.com/rwlist/autotrade-bot/pkg/draw"
@@ -42,4 +44,8 @@ func (b *Binance) klinesOpts() draw.KlinesOpts {
 		Symbol: b.opts.Symbol,
 		T:      b.opts.Scale,
 	}
+}
+
+func sum(str1, str2 string) decimal.Decimal {
+	return decimal.Sum(convert.UnsafeDecimal(str1), convert.UnsafeDecimal(str2))
 }

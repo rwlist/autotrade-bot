@@ -2,6 +2,7 @@ package binance
 
 import (
 	"strings"
+	"time"
 
 	"github.com/rwlist/autotrade-bot/pkg/convert"
 	"github.com/shopspring/decimal"
@@ -45,7 +46,7 @@ func (b *Binance) AccountSymbolBalance(symbol string) (decimal.Decimal, error) {
 	}
 	for _, bal := range info {
 		if bal.Asset == symbol {
-			return convert.Sum(bal.Free, bal.Locked), nil
+			return sum(bal.Free, bal.Locked), nil
 		}
 	}
 	return decimal.Zero, nil
@@ -257,7 +258,7 @@ func (b *Binance) GetKlines(opts ...draw.KlinesOpts) (*draw.Klines, error) {
 		result.Max = decimal.Max(result.Max, convert.UnsafeDecimal(val.High))
 	}
 	result.Last = convert.UnsafeDecimal(klines[len(klines)-1].Close)
-	result.StartTime = klines[0].OpenTime / timeShift
+	result.StartTime = time.Unix(klines[0].OpenTime/timeShift, 0)
 	result.Scale = opts[0].T
 	return &result, nil
 }
