@@ -1,11 +1,13 @@
 package trade
 
+import "github.com/shopspring/decimal"
+
 type Order struct {
 	Symbol           string
 	OrderID          int64
-	Price            string
-	OrigQuantity     string
-	ExecutedQuantity string
+	Price            decimal.Decimal
+	OrigQuantity     decimal.Decimal
+	ExecutedQuantity decimal.Decimal
 	Status           string
 	Side             string
 }
@@ -17,9 +19,9 @@ type Status struct {
 }
 
 type Balance struct {
-	Asset  string `json:"asset"`
-	Free   string `json:"free"`
-	Locked string `json:"locked"`
+	Asset  string          `json:"asset"`
+	Free   decimal.Decimal `json:"free"`
+	Locked decimal.Decimal `json:"locked"`
 }
 
 type Opts struct {

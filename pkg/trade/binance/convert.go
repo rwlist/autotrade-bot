@@ -2,14 +2,15 @@ package binance
 
 import (
 	gobinance "github.com/adshao/go-binance"
+	"github.com/rwlist/autotrade-bot/pkg/convert"
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 )
 
 func convertBalance(bal *gobinance.Balance) trade.Balance {
 	return trade.Balance{
 		Asset:  bal.Asset,
-		Free:   bal.Free,
-		Locked: bal.Locked,
+		Free:   convert.UnsafeDecimal(bal.Free),
+		Locked: convert.UnsafeDecimal(bal.Locked),
 	}
 }
 

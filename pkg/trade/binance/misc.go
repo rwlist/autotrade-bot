@@ -3,8 +3,11 @@ package binance
 import (
 	"time"
 
+	"github.com/shopspring/decimal"
+
+	"github.com/rwlist/autotrade-bot/pkg/convert"
+
 	"github.com/rwlist/autotrade-bot/pkg/draw"
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
 )
 
 const timeShift = 1000
@@ -32,12 +35,8 @@ func calcStartTime(s string) int64 {
 	case 'M':
 		d = -time.Hour * hday * dmonth
 	}
-	d *= time.Duration(klinesCount * tostr.Int(s[:len(s)-1]))
+	d *= time.Duration(klinesCount * convert.Int(s[:len(s)-1]))
 	return int64(timeShift) * t.Add(d).Unix()
-}
-
-func sum(str1, str2 string) float64 {
-	return tostr.StrToFloat64(str1) + tostr.StrToFloat64(str2)
 }
 
 func (b *Binance) klinesOpts() draw.KlinesOpts {
@@ -45,4 +44,8 @@ func (b *Binance) klinesOpts() draw.KlinesOpts {
 		Symbol: b.opts.Symbol,
 		T:      b.opts.Scale,
 	}
+}
+
+func sum(str1, str2 string) decimal.Decimal {
+	return decimal.Sum(convert.UnsafeDecimal(str1), convert.UnsafeDecimal(str2))
 }

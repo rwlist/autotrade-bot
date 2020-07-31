@@ -4,13 +4,14 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/convert"
+	"github.com/shopspring/decimal"
 )
 
 const patternFloat = `[0-9]+\.?[0-9]*`
 const patternBasic = `(rate)-[0-9]+\.?[0-9]*\+[0-9]+\.?[0-9]*\*\((now)-(start)\)\^[0-9]+\.?[0-9]*`
 
-func parseBasic(s string) ([]float64, error) {
+func parseBasic(s string) ([]decimal.Decimal, error) {
 	re := regexp.MustCompile(patternBasic)
 	s = re.FindString(s)
 	if s == "" {
@@ -21,9 +22,9 @@ func parseBasic(s string) ([]float64, error) {
 	if len(nums) != cntCoef {
 		return nil, errors.New("invalid formula format")
 	}
-	var coef []float64
+	var coef []decimal.Decimal
 	for _, val := range nums {
-		coef = append(coef, tostr.StrToFloat64(val))
+		coef = append(coef, convert.UnsafeDecimal(val))
 	}
 	return coef, nil
 }

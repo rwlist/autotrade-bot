@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"time"
 
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
+	"github.com/rwlist/autotrade-bot/pkg/convert"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -27,7 +27,7 @@ func (AllPriceTicks) Ticks(min, max float64) []plot.Tick {
 	tks := plot.DefaultTicks{}.Ticks(min, max)
 	for i, t := range tks {
 		if t.Label == "" {
-			tks[i].Label = tostr.Str64(int64(t.Value))
+			tks[i].Label = convert.Str64(int64(t.Value))
 		}
 	}
 	return tks

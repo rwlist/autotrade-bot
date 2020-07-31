@@ -5,30 +5,33 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rwlist/autotrade-bot/pkg/convert"
+
+	"github.com/shopspring/decimal"
+
 	"github.com/rwlist/autotrade-bot/pkg/formula"
-	"github.com/rwlist/autotrade-bot/pkg/tostr"
 	"github.com/rwlist/autotrade-bot/pkg/trade/binance"
 )
 
 type Response struct {
-	CurRate     float64
-	FormulaRate float64
-	AbsDif      float64
-	RelDif      float64
-	StartRate   float64
-	AbsProfit   float64
-	RelProfit   float64
+	CurRate     decimal.Decimal
+	FormulaRate decimal.Decimal
+	AbsDif      decimal.Decimal
+	RelDif      decimal.Decimal
+	StartRate   decimal.Decimal
+	AbsProfit   decimal.Decimal
+	RelProfit   decimal.Decimal
 	T           time.Time
 	Err         error
 	Formula     string
 }
 
-func (ft *FormulaTrigger) newResponse(curRate, fRate float64) *Response {
-	absDif := curRate - fRate
-	relDif := 100.0 * absDif / fRate
-	d := curRate - ft.formula.Rate()
-	relProf := 100.0 * d / ft.formula.Rate()
-	absProf := d * ft.haveBTC
+func (ft *FormulaTrigger) newResponse(curRate, fRate decimal.Decimal) *Response {
+	absDif := curRate.Sub(fRate)                                   // curRate - fRate
+	relDif := absDif.Shift(convert.UsefulShift).Div(fRate)         // 100.0 * absDif / fRate
+	d := curRate.Sub(ft.formula.Rate())                            // curRate - ft.formula.Rate()
+	relProf := d.Shift(convert.UsefulShift).Div(ft.formula.Rate()) // 100.0 * d / ft.formula.Rate()
+	absProf := d.Mul(ft.haveBTC)                                   // d * ft.haveBTC
 	return &Response{
 		CurRate:     curRate,
 		FormulaRate: fRate,
@@ -46,7 +49,7 @@ type FormulaTrigger struct {
 	active  bool
 	Resp    *Response
 	Ping    chan struct{}
-	haveBTC float64
+	haveBTC decimal.Decimal
 	b       binance.Binance
 	formula formula.Formula
 	mux     sync.Mutex
@@ -57,7 +60,7 @@ func NewTrigger(b binance.Binance) FormulaTrigger {
 		active:  false,
 		Resp:    &Response{},
 		Ping:    make(chan struct{}),
-		haveBTC: 0,
+		haveBTC: decimal.Zero,
 		b:       b,
 	}
 }
@@ -91,7 +94,7 @@ func (ft *FormulaTrigger) updBTC() {
 	defer ft.mux.Unlock()
 	haveBTC, err := ft.b.AccountSymbolBalance("BTC")
 	if err != nil {
-		haveBTC = 0
+		haveBTC = decimal.Zero
 	}
 	ft.haveBTC = haveBTC
 }
@@ -99,7 +102,7 @@ func (ft *FormulaTrigger) updBTC() {
 const TimeSleep = 10 * time.Second
 
 func (ft *FormulaTrigger) check() *Response {
-	t := time.Now().Unix()
+	t := time.Now()
 	rate, err := ft.b.GetRate()
 	if err != nil {
 		return &Response{
@@ -108,7 +111,7 @@ func (ft *FormulaTrigger) check() *Response {
 			Formula: ft.formula.String(),
 		}
 	}
-	return ft.newResponse(tostr.StrToFloat64(rate), ft.formula.Calc(float64(t)))
+	return ft.newResponse(rate, ft.formula.Calc(t))
 }
 
 func (ft *FormulaTrigger) UpdResponse() {
