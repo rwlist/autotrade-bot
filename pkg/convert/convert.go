@@ -14,7 +14,7 @@ const MoneyTrunc = 6
 func UnsafeDecimal(str string) decimal.Decimal {
 	dec, err := decimal.NewFromString(str)
 	if err != nil {
-		log.WithError(err).Error("in UnsafeDecimal")
+		log.WithField("str", str).WithError(err).Error("in UnsafeDecimal")
 		return decimal.Zero
 	}
 	return dec
