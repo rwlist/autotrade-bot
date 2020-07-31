@@ -7,8 +7,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const cntCoef = 3
-
 //	Базовая функция удовлетворяющая интерфейсу Formula
 //	Имеет вид rate-10+0.0002*(now-start)^1.2
 //	Парсится через regexp patternBasic
