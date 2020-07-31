@@ -105,7 +105,7 @@ func (h *Handler) commandSell(chatID int) {
 func (h *Handler) commandDraw(chatID int, str string) {
 	b, err := h.svc.Logic.Draw(str, nil)
 	if err != nil {
-		log.WithError(err).Error("command draw error")
+		log.WithField("str", str).WithError(err).Error("command draw error")
 		err = fmt.Errorf("command draw error: %w: ", err)
 		h.sendMessage(chatID, err.Error())
 		return
@@ -116,7 +116,7 @@ func (h *Handler) commandDraw(chatID int, str string) {
 func (h *Handler) commandBegin(chatID int, str string) {
 	err := h.svc.Logic.Begin(&Sender{h.bot, chatID}, str)
 	if err != nil {
-		log.WithError(err).Error("command begin error")
+		log.WithField("str", str).WithError(err).Error("command begin error")
 		err = fmt.Errorf("command begin error: %w: ", err)
 		h.sendMessage(chatID, err.Error())
 		return
@@ -137,7 +137,7 @@ func (h *Handler) commandFstat(chatID int, str string) {
 	status := h.svc.Logic.Fstat(str)
 	if status.Err != nil {
 		err := status.Err
-		log.WithError(err).Error("command fstat error")
+		log.WithField("str", str).WithError(err).Error("command fstat error")
 		err = fmt.Errorf("command fstat error: %w: ", err)
 		h.sendMessage(chatID, err.Error())
 		return
@@ -168,7 +168,7 @@ func (h *Handler) commandSetScale(chatID int, str string) {
 func (h *Handler) commandAlter(chatID int, str string) {
 	err := h.svc.Logic.Alter(str)
 	if err != nil {
-		log.WithError(err).Error("command alter error")
+		log.WithField("str", str).WithError(err).Error("command alter error")
 		err = fmt.Errorf("command alter error: %w: ", err)
 		h.sendMessage(chatID, err.Error())
 		return
