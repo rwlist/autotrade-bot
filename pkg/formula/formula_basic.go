@@ -1,7 +1,6 @@
 package formula
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/rwlist/autotrade-bot/pkg/convert"
@@ -17,10 +16,11 @@ type Basic struct {
 	rate  decimal.Decimal
 	start time.Time
 	coef  []decimal.Decimal // Числовые коэффициенты
+	orig  string
 }
 
 func (f *Basic) String() string {
-	return fmt.Sprintf("rate-%s+%s*(now-start)^%s", f.coef[0], f.coef[1], f.coef[2])
+	return f.orig
 }
 
 // Calc(now) Вычисляет значение в точке now
@@ -29,7 +29,7 @@ func (f *Basic) Calc(now time.Time) decimal.Decimal {
 	brackets := decimal.NewFromInt(t)
 	tmp := f.coef[1].Mul(convert.Pow(brackets, f.coef[2])) // Нужен Pow получше
 	return f.Rate().
-		Sub(f.coef[0]).
+		Add(f.coef[0]).
 		Add(tmp)
 }
 
@@ -52,6 +52,7 @@ func NewBasic(s string, rate decimal.Decimal, start time.Time) (*Basic, error) {
 		rate:  rate,
 		start: start,
 		coef:  coef,
+		orig:  s,
 	}, nil
 }
 
