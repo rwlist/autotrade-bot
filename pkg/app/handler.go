@@ -25,7 +25,7 @@ type Handler struct {
 type Services struct {
 	Logic   *logic.Logic
 	Status  *stat.Service
-	History history.History
+	History *history.History
 }
 
 func NewHandler(bot *telegram.Bot, cfg *conf.Struct, svc Services) *Handler {

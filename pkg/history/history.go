@@ -4,8 +4,8 @@ type History struct {
 	formulas []string
 }
 
-func New() History {
-	return History{}
+func New() *History {
+	return &History{}
 }
 
 const maxLen = 10
@@ -17,10 +17,6 @@ func (h *History) AddFormula(s string) {
 	}
 }
 
-func (h *History) GetFormulasList() string {
-	txt := "History:\n\n"
-	for _, val := range h.formulas {
-		txt += val + "\n"
-	}
-	return txt
+func (h *History) GetFormulasList() []string {
+	return h.formulas
 }

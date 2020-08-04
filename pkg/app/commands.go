@@ -184,7 +184,11 @@ func (h *Handler) commandAlter(chatID int, str string) {
 }
 
 func (h *Handler) commandHistory(chatID int) {
-	txt := h.svc.History.GetFormulasList()
+	hist := h.svc.History.GetFormulasList()
+	txt := "History:\n\n"
+	for _, val := range hist {
+		txt += val + "\n"
+	}
 	h.sendMessage(chatID, txt)
 }
 
