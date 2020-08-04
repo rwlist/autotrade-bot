@@ -3,6 +3,8 @@ package app
 import (
 	"strings"
 
+	"github.com/rwlist/autotrade-bot/pkg/history"
+
 	"github.com/rwlist/autotrade-bot/pkg/convert"
 
 	"github.com/rwlist/autotrade-bot/pkg/logic"
@@ -21,8 +23,9 @@ type Handler struct {
 }
 
 type Services struct {
-	Logic  *logic.Logic
-	Status *stat.Service
+	Logic   *logic.Logic
+	Status  *stat.Service
+	History *history.History
 }
 
 func NewHandler(bot *telegram.Bot, cfg *conf.Struct, svc Services) *Handler {

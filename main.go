@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 
+	"github.com/rwlist/autotrade-bot/pkg/history"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/rwlist/autotrade-bot/pkg/trigger"
@@ -69,8 +71,9 @@ func main() {
 		bot,
 		cfg,
 		app.Services{
-			Logic:  logic.NewLogic(&myBinance, &tr, cfg.Bot.IsTest),
-			Status: stat.New(myBinance),
+			Logic:   logic.NewLogic(&myBinance, &tr, cfg.Bot.IsTest),
+			Status:  stat.New(myBinance),
+			History: history.New(),
 		},
 	)
 

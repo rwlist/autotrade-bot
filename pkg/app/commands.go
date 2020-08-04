@@ -47,6 +47,9 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 	case "/status":
 		h.commandStatus(chatID)
 
+	case "/history":
+		h.commandHistory(chatID)
+
 	default:
 		h.commandNotFound(chatID)
 	}
@@ -111,6 +114,7 @@ func (h *Handler) commandDraw(chatID int, str string) {
 		return
 	}
 	h.sendPhoto(chatID, "graph.png", b)
+	h.svc.History.AddFormula(str)
 }
 
 func (h *Handler) commandBegin(chatID int, str string) {
@@ -121,6 +125,7 @@ func (h *Handler) commandBegin(chatID int, str string) {
 		h.sendMessage(chatID, err.Error())
 		return
 	}
+	h.svc.History.AddFormula(str)
 }
 
 func (h *Handler) commandEnd(chatID int) {
@@ -175,6 +180,16 @@ func (h *Handler) commandAlter(chatID int, str string) {
 	}
 	txt := fmt.Sprintf("Formula set to %v!", str)
 	h.sendMessage(chatID, txt)
+	h.svc.History.AddFormula(str)
+}
+
+func (h *Handler) commandHistory(chatID int) {
+	hist := h.svc.History.GetFormulasList()
+	txt := "History:\n\n"
+	for _, val := range hist {
+		txt += val + "\n"
+	}
+	h.sendMessage(chatID, txt)
 }
 
 func (h *Handler) commandHelp(chatID int) {
@@ -196,6 +211,7 @@ func (h *Handler) commandHelp(chatID int) {
 /setScale sets the graph scale (can be 1m, 3m, 5m, 15m, 30m, 1H, 2H, 4H, 6H, 8H, 12H, 1D, 3D, 1W, 1M). Default 15m
 
 /alter <formula> sets the formula in the trigger to a new without changing of the start point
+/history sends 10 last used formulas
 `
 
 	h.sendMessage(chatID, str)
