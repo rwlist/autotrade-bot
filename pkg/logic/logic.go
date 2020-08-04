@@ -85,7 +85,7 @@ func (l *Logic) Sell(s Sender) error {
 	return nil
 }
 
-func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
+func (l *Logic) Draw(str string, f formula.Formula) ([]byte, error) {
 	klines, err := l.b.GetKlines()
 	if err != nil {
 		return nil, fmt.Errorf("in binance.GetKlines: %w", err)
@@ -108,15 +108,13 @@ func (l *Logic) Draw(str string, optF formula.Formula) ([]byte, error) {
 	kmax := convert.Float64(klines.Max)
 	yMax := kmax + math.Log(kmax)
 	xMax := float64(2*time.Now().Unix() - klines.StartTime.Unix())
-	if optF == nil {
-		f, err := formula.NewBasic(str, klines.Last, time.Now())
+	if f == nil {
+		f, err = formula.NewBasic(str, klines.Last, time.Now())
 		if err != nil {
 			return nil, fmt.Errorf("in formula.NewBasic: %w", err)
 		}
-		p.AddFunction(f, yMax, xMax)
-	} else {
-		p.AddFunction(optF, yMax, xMax)
 	}
+	p.AddFunction(f, yMax, xMax)
 	buffer, err := p.SaveToBuffer()
 	if err != nil {
 		return nil, fmt.Errorf("in draw.SaveToBuffer: %w", err)
