@@ -50,12 +50,12 @@ type FormulaTrigger struct {
 	Resp    *Response
 	Ping    chan struct{}
 	haveBTC decimal.Decimal
-	b       binance.Binance
+	b       *binance.Binance
 	formula formula.Formula
 	mux     sync.Mutex
 }
 
-func NewTrigger(b binance.Binance) FormulaTrigger {
+func NewTrigger(b *binance.Binance) FormulaTrigger {
 	return FormulaTrigger{
 		active:  false,
 		Resp:    &Response{},

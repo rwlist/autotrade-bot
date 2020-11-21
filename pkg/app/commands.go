@@ -2,8 +2,11 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/rwlist/autotrade-bot/pkg/stat"
 )
 
 func (h *Handler) handleCommand(chatID int, cmds []string) {
@@ -45,7 +48,7 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 		h.commandBuy(chatID)
 
 	case "/status":
-		h.commandStatus(chatID)
+		h.commandStatus(chatID, str)
 
 	case "/history":
 		h.commandHistory(chatID)
@@ -55,10 +58,17 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 	}
 }
 
-func (h *Handler) commandStatus(chatID int) {
+func (h *Handler) commandStatus(chatID int, str string) {
 	const places = 2
 
-	status, err := h.svc.Status.Status()
+	var st *stat.Service
+	if strings.Contains(str, "chatex") {
+		st = h.svc.StatusChatex
+	} else {
+		st = h.svc.Status
+	}
+
+	status, err := st.Status()
 	if err != nil {
 		text := fmt.Sprintf("Error while status:\n\n%s", err)
 		h.sendMessage(chatID, text)

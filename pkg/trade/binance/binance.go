@@ -19,12 +19,12 @@ type Binance struct {
 }
 
 // Создаёт новый Binance
-func NewBinance(cli Client) Binance {
+func NewBinance(cli Client) *Binance {
 	opts := trade.Opts{
 		Symbol: "BTCUSDT", // default "BTCUSDT"
 		Scale:  "15m",     // default "15m"
 	}
-	return Binance{cli, &opts}
+	return &Binance{cli, &opts}
 }
 
 //	Возвращает информацию по балансу пользователя

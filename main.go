@@ -3,7 +3,10 @@ package main
 import (
 	"encoding/json"
 
+	chatexsdk "github.com/chatex-com/sdk-go"
+
 	"github.com/rwlist/autotrade-bot/pkg/history"
+	"github.com/rwlist/autotrade-bot/pkg/trade/chatex"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,6 +18,7 @@ import (
 
 	"github.com/petuhovskiy/telegram"
 	"github.com/petuhovskiy/telegram/updates"
+
 	"github.com/rwlist/autotrade-bot/pkg/app"
 	"github.com/rwlist/autotrade-bot/pkg/conf"
 	"github.com/rwlist/autotrade-bot/pkg/trade/binance"
@@ -57,23 +61,27 @@ func main() {
 		log.WithError(err).Fatal("in updates.StartPolling()")
 	}
 
-	var cli binance.Client
-	cli = binance.NewClientDefault(gobinance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret))
+	var binanceCli binance.Client
+	binanceCli = binance.NewClientDefault(gobinance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret))
 	if cfg.Binance.Debug {
-		cli = binance.NewClientLog(cli)
+		binanceCli = binance.NewClientLog(binanceCli)
 	}
 
-	myBinance := binance.NewBinance(cli)
+	myBinance := binance.NewBinance(binanceCli)
 
 	tr := trigger.NewTrigger(myBinance)
+
+	chatexCli := chatexsdk.NewClient("https://api.chatex.com/v1", cfg.Chatex.RefreshToken)
+	myChatex := chatex.NewChatex(chatexCli)
 
 	handler := app.NewHandler(
 		bot,
 		cfg,
 		app.Services{
-			Logic:   logic.NewLogic(&myBinance, &tr, cfg.Bot.IsTest),
-			Status:  stat.New(myBinance),
-			History: history.New(),
+			Logic:        logic.NewLogic(myBinance, &tr, cfg.Bot.IsTest),
+			Status:       stat.New(myBinance),
+			StatusChatex: stat.New(myChatex),
+			History:      history.New(),
 		},
 	)
 

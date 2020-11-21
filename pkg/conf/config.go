@@ -7,6 +7,7 @@ import (
 type Struct struct {
 	Bot     Bot
 	Binance Binance
+	Chatex  Chatex
 }
 
 func ParseEnv() (*Struct, error) {
