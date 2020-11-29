@@ -20,4 +20,4 @@ require (
 	gonum.org/v1/plot v0.7.0
 )
 
-replace github.com/chatex-com/sdk-go => ../sdk-go
+replace github.com/chatex-com/sdk-go => ./vndr/sdk-go
