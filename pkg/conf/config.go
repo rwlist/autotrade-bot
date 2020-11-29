@@ -8,6 +8,7 @@ type Struct struct {
 	Bot     Bot
 	Binance Binance
 	Chatex  Chatex
+	Redis   Redis
 }
 
 func ParseEnv() (*Struct, error) {
