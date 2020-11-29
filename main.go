@@ -9,6 +9,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/rwlist/autotrade-bot/pkg/exproc"
 	"github.com/rwlist/autotrade-bot/pkg/history"
 	"github.com/rwlist/autotrade-bot/pkg/store/redisdb"
 	"github.com/rwlist/autotrade-bot/pkg/trade/chatex"
@@ -66,6 +67,8 @@ func main() {
 		},
 	})
 
+	adminSender := app.NewSender(bot, cfg.Bot.AdminID)
+
 	ch, err := updates.StartPolling(bot, telegram.GetUpdatesRequest{
 		Offset:  0,
 		Limit:   50,
@@ -100,6 +103,9 @@ func main() {
 			log.WithError(err).Fatal("collect inf finished")
 		}
 	}()
+
+	exFinder := exproc.NewFinder(chatexCli, ordersCollector, adminSender)
+	ordersCollector.RegisterCallback(exFinder.OnSnapshot)
 
 	myChatex := chatex.NewChatex(chatexCli, ordersCollector)
 

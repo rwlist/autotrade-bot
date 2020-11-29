@@ -2,6 +2,7 @@ package chatex
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	chatexsdk "github.com/chatex-com/sdk-go"
@@ -11,10 +12,15 @@ import (
 	"github.com/rwlist/autotrade-bot/pkg/store/redisdb"
 )
 
+type callback func(OrdersSnapshot)
+
 type OrdersCollector struct {
 	cli  *chatexsdk.Client
 	list *redisdb.List
 	log  logrus.FieldLogger
+
+	callbacks []callback
+	mu        sync.RWMutex
 }
 
 func NewOrdersCollector(cli *chatexsdk.Client, list *redisdb.List) *OrdersCollector {
@@ -25,11 +31,13 @@ func NewOrdersCollector(cli *chatexsdk.Client, list *redisdb.List) *OrdersCollec
 	}
 }
 
-func (c *OrdersCollector) CollectAll() (map[string]FetchedOrders, error) {
+func (c *OrdersCollector) CollectAll() (*OrdersSnapshot, error) {
 	const (
 		defaultSleep = time.Second / 2
 		sleepOnError = time.Second
 	)
+
+	started := time.Now()
 
 	coins, err := c.cli.GetCoins(context.Background())
 	if err != nil {
@@ -97,7 +105,14 @@ func (c *OrdersCollector) CollectAll() (map[string]FetchedOrders, error) {
 		}
 	}
 
-	return result, nil
+	finished := time.Now()
+
+	return &OrdersSnapshot{
+		Fetched: result,
+		Coins:   coins,
+		Started:  started,
+		Finished: finished,
+	}, nil
 }
 
 func (c *OrdersCollector) CollectInf(ctx context.Context) error {
@@ -116,21 +131,11 @@ func (c *OrdersCollector) CollectInf(ctx context.Context) error {
 }
 
 func (c *OrdersCollector) collectAndSave() {
-	started := time.Now()
-
-	all, err := c.CollectAll()
+	snapshot, err := c.CollectAll()
 	if err != nil {
 		c.log.WithError(err).Error("failed to collect all")
 		metrics.ChatexCollectorErr()
 		return
-	}
-
-	finished := time.Now()
-
-	snapshot := OrdersSnapshot{
-		Fetched:  all,
-		Started:  started,
-		Finished: finished,
 	}
 
 	err = c.list.LPush(snapshot)
@@ -141,4 +146,18 @@ func (c *OrdersCollector) collectAndSave() {
 	}
 
 	metrics.ChatexCollectorOk()
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	for _, cb := range c.callbacks {
+		cb(*snapshot)
+	}
+}
+
+func (c *OrdersCollector) RegisterCallback(cb callback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.callbacks = append(c.callbacks, cb)
 }

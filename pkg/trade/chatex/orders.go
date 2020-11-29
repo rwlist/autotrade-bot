@@ -13,6 +13,7 @@ type FetchedOrders struct {
 
 type OrdersSnapshot struct {
 	Fetched  map[string]FetchedOrders
+	Coins    []chatexsdk.Coin
 	Started  time.Time
 	Finished time.Time
 }
