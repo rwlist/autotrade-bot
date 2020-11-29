@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/petuhovskiy/telegram v0.0.0-20200207220211-6250cca70f10
 	github.com/pplcc/plotext v0.0.0-20180221170324-68ab3c6e05c3
+	github.com/prometheus/client_golang v1.8.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1

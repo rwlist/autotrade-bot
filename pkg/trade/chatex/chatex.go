@@ -11,12 +11,14 @@ import (
 )
 
 type Chatex struct {
-	cli *chatexsdk.Client
+	cli       *chatexsdk.Client
+	collector *OrdersCollector
 }
 
-func NewChatex(cli *chatexsdk.Client) *Chatex {
+func NewChatex(cli *chatexsdk.Client, collector *OrdersCollector) *Chatex {
 	return &Chatex{
-		cli: cli,
+		cli:       cli,
+		collector: collector,
 	}
 }
 

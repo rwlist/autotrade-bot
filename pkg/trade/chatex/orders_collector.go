@@ -7,6 +7,7 @@ import (
 	chatexsdk "github.com/chatex-com/sdk-go"
 	"github.com/sirupsen/logrus"
 
+	"github.com/rwlist/autotrade-bot/pkg/metrics"
 	"github.com/rwlist/autotrade-bot/pkg/store/redisdb"
 )
 
@@ -120,6 +121,7 @@ func (c *OrdersCollector) collectAndSave() {
 	all, err := c.CollectAll()
 	if err != nil {
 		c.log.WithError(err).Error("failed to collect all")
+		metrics.ChatexCollectorErr()
 		return
 	}
 
@@ -134,5 +136,9 @@ func (c *OrdersCollector) collectAndSave() {
 	err = c.list.LPush(snapshot)
 	if err != nil {
 		c.log.WithError(err).Error("failed to save orders snapshot")
+		metrics.ChatexCollectorErr()
+		return
 	}
+
+	metrics.ChatexCollectorOk()
 }

@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
 
 	chatexsdk "github.com/chatex-com/sdk-go"
+	"github.com/go-redis/redis/v8"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/rwlist/autotrade-bot/pkg/history"
+	"github.com/rwlist/autotrade-bot/pkg/store/redisdb"
 	"github.com/rwlist/autotrade-bot/pkg/trade/chatex"
 
 	log "github.com/sirupsen/logrus"
@@ -39,6 +44,15 @@ func main() {
 
 	log.SetFormatter(&log.JSONFormatter{PrettyPrint: cfg.Bot.PrettyPrint})
 
+	go func(){
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		err := http.ListenAndServe(":2112", mux)
+		if err != nil && err != http.ErrServerClosed {
+			log.WithError(err).Fatal("prometheus server error")
+		}
+	}()
+
 	bot := telegram.NewBotWithOpts(cfg.Bot.Token, &telegram.Opts{
 		Middleware: func(handler telegram.RequestHandler) telegram.RequestHandler {
 			return func(methodName string, req interface{}) (message json.RawMessage, err error) {
@@ -61,6 +75,11 @@ func main() {
 		log.WithError(err).Fatal("in updates.StartPolling()")
 	}
 
+	redisDB := redis.NewClient(&redis.Options{
+		Addr:               cfg.Redis.Addr,
+		Password:           cfg.Redis.Password,
+	})
+
 	var binanceCli binance.Client
 	binanceCli = binance.NewClientDefault(gobinance.NewClient(cfg.Binance.APIKey, cfg.Binance.Secret))
 	if cfg.Binance.Debug {
@@ -72,7 +91,17 @@ func main() {
 	tr := trigger.NewTrigger(myBinance)
 
 	chatexCli := chatexsdk.NewClient("https://api.chatex.com/v1", cfg.Chatex.RefreshToken)
-	myChatex := chatex.NewChatex(chatexCli)
+	chatexSnapshotList := redisdb.NewList("chatex_order_snapshots", redisDB)
+	ordersCollector := chatex.NewOrdersCollector(chatexCli, chatexSnapshotList)
+
+	go func() {
+		err := ordersCollector.CollectInf(context.Background())
+		if err != nil && err != context.Canceled {
+			log.WithError(err).Fatal("collect inf finished")
+		}
+	}()
+
+	myChatex := chatex.NewChatex(chatexCli, ordersCollector)
 
 	handler := app.NewHandler(
 		bot,
