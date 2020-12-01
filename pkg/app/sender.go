@@ -10,6 +10,13 @@ type Sender struct {
 	chatID int
 }
 
+func NewSender(bot *telegram.Bot, chatID int) *Sender {
+	return &Sender{
+		bot:    bot,
+		chatID: chatID,
+	}
+}
+
 func (s *Sender) Send(text string) {
 	_, _ = s.bot.SendMessage(&telegram.SendMessageRequest{
 		ChatID: convert.Str(s.chatID),

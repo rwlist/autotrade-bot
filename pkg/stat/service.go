@@ -1,27 +1,34 @@
 package stat
 
 import (
-	"github.com/rwlist/autotrade-bot/pkg/trade/binance"
 	"github.com/shopspring/decimal"
+
+	"github.com/rwlist/autotrade-bot/pkg/trade"
 )
 
-type Service struct {
-	myBinance binance.Binance
+type exchangeInfo interface {
+	AccountBalance() ([]trade.Balance, error)
+	BalanceToUSD(bal *trade.Balance) (decimal.Decimal, error)
+	GetRate(symbol ...string) (decimal.Decimal, error)
 }
 
-func New(myBinance binance.Binance) *Service {
+type Service struct {
+	info exchangeInfo
+}
+
+func New(info exchangeInfo) *Service {
 	return &Service{
-		myBinance: myBinance,
+		info: info,
 	}
 }
 
 func (s *Service) Status() (*Status, error) {
-	rate, err := s.myBinance.GetRate()
+	rate, err := s.info.GetRate()
 	if err != nil {
 		return nil, err
 	}
 
-	allBalances, err := s.myBinance.AccountBalance()
+	allBalances, err := s.info.AccountBalance()
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +45,7 @@ func (s *Service) Status() (*Status, error) {
 			continue
 		}
 
-		balanceInUSD, err := s.myBinance.BalanceToUSD(&bal)
+		balanceInUSD, err := s.info.BalanceToUSD(&bal)
 		if err != nil {
 			return &Status{}, err
 		}
