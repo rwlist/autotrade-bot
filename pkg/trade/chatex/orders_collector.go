@@ -5,8 +5,9 @@ import (
 	"sync"
 	"time"
 
-	chatexsdk "github.com/chatex-com/sdk-go"
 	"github.com/sirupsen/logrus"
+
+	chatexsdk "github.com/chatex-com/sdk-go"
 
 	"github.com/rwlist/autotrade-bot/pkg/metrics"
 	"github.com/rwlist/autotrade-bot/pkg/store/redisdb"
@@ -108,8 +109,8 @@ func (c *OrdersCollector) CollectAll() (*OrdersSnapshot, error) {
 	finished := time.Now()
 
 	return &OrdersSnapshot{
-		Fetched: result,
-		Coins:   coins,
+		Fetched:  result,
+		Coins:    coins,
 		Started:  started,
 		Finished: finished,
 	}, nil
@@ -160,4 +161,14 @@ func (c *OrdersCollector) RegisterCallback(cb callback) {
 	defer c.mu.Unlock()
 
 	c.callbacks = append(c.callbacks, cb)
+}
+
+func (c *OrdersCollector) Last() (*OrdersSnapshot, error) {
+	var snapshot OrdersSnapshot
+	err := c.list.Left(&snapshot)
+	if err != nil {
+		return nil, err
+	}
+
+	return &snapshot, nil
 }

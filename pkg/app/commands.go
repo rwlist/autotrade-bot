@@ -75,7 +75,7 @@ func (h *Handler) commandStatus(chatID int, str string) {
 		return
 	}
 
-	res := fmt.Sprintf("BTC: 1 ≈ %v USDT \n", status.Rate)
+	res := fmt.Sprintf("BTC: 1 ≈ %v USDT \n", status.Rate.RoundBank(places))
 	res += fmt.Sprintf("Total in USD ≈ %v $ \n\n", status.Total.RoundBank(places))
 	res += "Wallet balance:"
 
