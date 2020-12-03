@@ -97,7 +97,7 @@ func main() {
 	chatexOpts := chatex.NewTradeOpts(
 		redisdb.NewHash("trade_opts:chatex", redisDB),
 	)
-	chatexCli := chatexsdk.NewClient("https://api.chatex.com/v1", cfg.Chatex.RefreshToken)
+	chatexCli := chatexsdk.NewClient(cfg.Chatex.URL, cfg.Chatex.RefreshToken)
 	chatexSnapshotList := redisdb.NewList("chatex_order_snapshots", redisDB)
 	ordersCollector := chatex.NewOrdersCollector(chatexCli, chatexSnapshotList, chatexOpts)
 

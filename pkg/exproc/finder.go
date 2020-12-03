@@ -124,7 +124,10 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 				start,
 			)
 
-			calc := OrderCalc{}.CalcTrades(order1, order2)
+			calc := OrderCalc{
+				StartCoin: f.collector.Coin(start),
+				NextCoin:  f.collector.Coin(next),
+			}.CalcTrades(order1, order2)
 
 			buy1 := fmt.Sprintf(
 				"Buy %s %s for %s %s, orderID = %v",
@@ -170,7 +173,9 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 	f.sender.Send(strings.Join(results, "\n\n"))
 }
 
-func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) {
+func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) { //nolint:funlen
+	const places = 8
+
 	// trades must not be clashed
 	f.tradeMutex.Lock()
 	defer f.tradeMutex.Unlock()
@@ -189,9 +194,117 @@ func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) {
 		return
 	}
 
+	log.WithField("order1", order1).WithField("order2", order2).Info("updated orders")
+
 	// sleep some time to relax rate limits
 	const relaxTime = time.Second / 2
 	time.Sleep(relaxTime)
+
+	opts, err := f.tradeOpts.GetAll()
+	if err != nil {
+		log.WithError(err).Error("failed to get opts")
+		return
+	}
+
+	pair1 := pairOf(order1)
+	limitOptionName := "limit." + pair1.Sell
+	myLimit := opts.Decimal(limitOptionName)
+
+	calc := OrderCalc{
+		MaxStartAmount: &myLimit,
+		StartCoin:      f.collector.Coin(pair1.Sell),
+		NextCoin:       f.collector.Coin(pair1.Buy),
+	}.CalcTrades(order1, order2)
+
+	var info []string
+	info = append(
+		info,
+		fmt.Sprintf(
+			"Attempt to do trade: %s -> %s -> %s",
+			pair1.Sell,
+			pair1.Buy,
+			pair1.Sell,
+		),
+		fmt.Sprintf(
+			"order1 = %v, order2 = %v",
+			order1.ID,
+			order2.ID,
+		),
+		fmt.Sprintf(
+			"startAmount = %v, nextAmount = %v, lastAmount = %v",
+			calc.StartAmount.RoundBank(places),
+			calc.NextAmount.RoundBank(places),
+			calc.LastAmount.RoundBank(places),
+		),
+	)
+
+	if !calc.StartAmount.IsPositive() || !calc.NextAmount.IsPositive() || !calc.LastAmount.IsPositive() {
+		info = append(info, "Error: not positive amount")
+		f.sender.Send(strings.Join(info, "\n"))
+		return
+	}
+
+	if !calc.LastAmount.GreaterThan(calc.StartAmount) {
+		info = append(info, "Error: not positive cycle")
+		f.sender.Send(strings.Join(info, "\n"))
+		return
+	}
+
+	trade1, err := f.makeTrade(order1.ID, chatexsdk.TradeRequest{
+		Amount: calc.NextAmount,
+		Rate:   order1.Rate,
+	})
+	if err != nil {
+		log.WithError(err).Error("failed to make trade1")
+		info = append(info, "Error(trade1): "+err.Error())
+		f.sender.Send(strings.Join(info, "\n"))
+		return
+	}
+
+	// trade1 is finished, so myLimit should be decreased
+	myLimit = myLimit.Sub(calc.StartAmount)
+	err = f.tradeOpts.SetOption(limitOptionName, myLimit.String())
+	if err != nil {
+		log.WithError(err).Error("failed to update myLimit")
+	}
+
+	info = append(
+		info,
+		fmt.Sprintf(
+			"Updated myLimit = %v",
+			myLimit.RoundBank(places),
+		),
+		fmt.Sprintf(
+			"trade1 = %v, received = %v, amount = %v",
+			trade1.ID,
+			trade1.ReceivedAmount,
+			trade1.Amount,
+		),
+	)
+
+	trade2, err := f.makeTrade(order2.ID, chatexsdk.TradeRequest{
+		Amount: calc.LastAmount,
+		Rate:   order2.Rate,
+	})
+	if err != nil {
+		log.WithError(err).Error("failed to make trade2")
+		info = append(info, "Error(trade2): "+err.Error())
+		f.sender.Send(strings.Join(info, "\n"))
+		return
+	}
+
+	info = append(
+		info,
+		fmt.Sprintf(
+			"trade2 = %v, received = %v, amount = %v",
+			trade2.ID,
+			trade2.ReceivedAmount,
+			trade2.Amount,
+		),
+		"All ok!",
+	)
+
+	f.sender.Send(strings.Join(info, "\n"))
 }
 
 func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
@@ -208,6 +321,7 @@ func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
 			time.Sleep(relaxTime)
 			continue
 		}
+		break
 	}
 
 	if err != nil {
@@ -216,4 +330,24 @@ func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
 
 	*ptr = *res
 	return nil
+}
+
+func (f *Finder) makeTrade(orderID uint64, req chatexsdk.TradeRequest) (*chatexsdk.Trade, error) {
+	const relaxTime = time.Second / 2
+
+	var (
+		res *chatexsdk.Trade
+		err error
+	)
+
+	for i := 0; i < 3; i++ {
+		res, err = f.cli.CreateTrade(context.Background(), uint(orderID), req)
+		if err == chatexsdk.ErrTooManyRequests {
+			time.Sleep(relaxTime)
+			continue
+		}
+		break
+	}
+
+	return res, err
 }

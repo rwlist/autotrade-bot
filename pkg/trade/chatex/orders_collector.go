@@ -16,10 +16,11 @@ import (
 type callback func(OrdersSnapshot)
 
 type OrdersCollector struct {
-	cli  *chatexsdk.Client
-	list *redisdb.List
-	log  logrus.FieldLogger
-	opts *TradeOpts
+	cli   *chatexsdk.Client
+	list  *redisdb.List
+	log   logrus.FieldLogger
+	opts  *TradeOpts
+	coins *CoinCache
 
 	callbacks []callback
 	mu        sync.RWMutex
@@ -27,11 +28,39 @@ type OrdersCollector struct {
 
 func NewOrdersCollector(cli *chatexsdk.Client, list *redisdb.List, opts *TradeOpts) *OrdersCollector {
 	return &OrdersCollector{
-		cli:  cli,
-		list: list,
-		log:  logrus.StandardLogger(),
-		opts: opts,
+		cli:   cli,
+		list:  list,
+		log:   logrus.StandardLogger(),
+		opts:  opts,
+		coins: NewCoinCache(),
 	}
+}
+
+func (c *OrdersCollector) getEnabledCoins() ([]chatexsdk.Coin, error) {
+	tmp, err := c.cli.GetCoins(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	opts, _ := c.opts.GetAll()
+
+	var coins []chatexsdk.Coin
+	for _, coin := range tmp {
+		c.coins.Update(coin)
+
+		code := coin.Code
+		if opts.Get("coins."+code+".disabled") == "true" {
+			continue
+		}
+
+		coins = append(coins, coin)
+	}
+
+	return coins, nil
+}
+
+func (c *OrdersCollector) Coin(code string) chatexsdk.Coin {
+	return c.coins.Get(code)
 }
 
 func (c *OrdersCollector) CollectAll() (*OrdersSnapshot, error) {
@@ -42,7 +71,7 @@ func (c *OrdersCollector) CollectAll() (*OrdersSnapshot, error) {
 
 	started := time.Now()
 
-	coins, err := c.cli.GetCoins(context.Background())
+	coins, err := c.getEnabledCoins()
 	if err != nil {
 		return nil, err
 	}

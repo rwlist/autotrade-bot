@@ -281,5 +281,6 @@ func (h *Handler) commandOptHelp(chatID int) {
 Here are some common options:
 orders_collector_state -- if "disable" is set, OrdersCollector will skip collectAndSave
 limit.usdt -- contains the maximum available trade amount for usdt
+coins.tbtc.disabled -- if "true", then this coin is ignored
 `))
 }
