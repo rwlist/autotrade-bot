@@ -1,10 +1,12 @@
 package exproc
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 
@@ -22,12 +24,16 @@ type Finder struct {
 	cli       *chatexsdk.Client
 	collector *chatex.OrdersCollector
 	sender    Sender
+	tradeOpts *chatex.TradeOpts
+
+	tradeMutex sync.Mutex
 }
 
-func NewFinder(cli *chatexsdk.Client, collector *chatex.OrdersCollector, sender Sender) *Finder {
+func NewFinder(cli *chatexsdk.Client, collector *chatex.OrdersCollector, tradeOpts *chatex.TradeOpts, sender Sender) *Finder {
 	return &Finder{
 		cli:       cli,
 		collector: collector,
+		tradeOpts: tradeOpts,
 		sender:    sender,
 	}
 }
@@ -35,7 +41,7 @@ func NewFinder(cli *chatexsdk.Client, collector *chatex.OrdersCollector, sender 
 func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) {
 	const logAllPaths = false
 
-	spew.Dump(snap)
+	log.Info("processing chatex snapshot in finder")
 
 	var coins []string
 	for _, coin := range snap.Coins {
@@ -120,60 +126,41 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) {
 				start,
 			)
 
-			// next -> start
-			midAmount1 := order1.Amount
-
-			// next <- last_start
-			midAmount2 := order2.Amount.Mul(order2.Rate)
-
-			// take min
-			midAmount := decimal.Min(midAmount1, midAmount2)
-
-			// start
-			startAmount := midAmount.Mul(order1.Rate)
-
-			// apply order1
-			nextAmount := startAmount.DivRound(order1.Rate, money.Precision)
+			calc := OrderCalc{}.CalcTrades(order1, order2)
 
 			buy1 := fmt.Sprintf(
 				"Buy %s %s for %s %s, orderID = %v",
-				nextAmount.Round(places),
+				calc.NextAmount.Round(places),
 				next,
-				startAmount.Round(places),
+				calc.StartAmount.Round(places),
 				start,
 				order1.ID,
 			)
 
-			// apply order2
-			lastAmount := nextAmount.DivRound(order2.Rate, money.Precision)
-
 			buy2 := fmt.Sprintf(
 				"Buy %s %s for %s %s, orderID = %v",
-				lastAmount.Round(places),
+				calc.LastAmount.Round(places),
 				start,
-				nextAmount.Round(places),
+				calc.NextAmount.Round(places),
 				next,
 				order2.ID,
 			)
 
 			log.WithFields(log.Fields{
-				"order1":      order1,
-				"order2":      order2,
-				"start":       start,
-				"next":        next,
-				"info":        info,
-				"buy1":        buy1,
-				"buy2":        buy2,
-				"midAmount1":  midAmount1,
-				"midAmount2":  midAmount2,
-				"midAmount":   midAmount,
-				"startAmount": startAmount,
-				"nextAmount":  nextAmount,
-				"lastAmount":  lastAmount,
+				"order1": order1,
+				"order2": order2,
+				"start":  start,
+				"next":   next,
+				"info":   info,
+				"buy1":   buy1,
+				"buy2":   buy2,
+				"calc":   calc,
 			}).Info("found positive loop")
 
 			info = info + "\n* " + buy1 + "\n* " + buy2
 			results = append(results, info)
+
+			go f.makeTrades(order1, order2)
 		}
 	}
 
@@ -183,4 +170,53 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) {
 	}
 
 	f.sender.Send(strings.Join(results, "\n\n"))
+}
+
+func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) {
+	// trades must not be clashed
+	f.tradeMutex.Lock()
+	defer f.tradeMutex.Unlock()
+
+	logger := log.WithField("order1", order1).WithField("order2", order2)
+
+	err := f.refreshOrder(&order1)
+	if err != nil {
+		logger.WithError(err).Error("failed to refresh order1")
+		return
+	}
+
+	err = f.refreshOrder(&order2)
+	if err != nil {
+		logger.WithError(err).Error("failed to refresh order2")
+		return
+	}
+
+	// sleep some time to relax rate limits
+	const relaxTime = time.Second / 2
+	time.Sleep(relaxTime)
+
+}
+
+func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
+	const relaxTime = time.Second / 2
+
+	var (
+		res *chatexsdk.Order
+		err error
+	)
+
+	for i := 0; i < 3; i++ {
+		res, err = f.cli.GetOrder(context.Background(), uint(ptr.ID))
+		if err == chatexsdk.ErrTooManyRequests {
+			time.Sleep(relaxTime)
+			continue
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	*ptr = *res
+	return nil
 }

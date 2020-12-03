@@ -104,7 +104,8 @@ func main() {
 		}
 	}()
 
-	exFinder := exproc.NewFinder(chatexCli, ordersCollector, adminSender)
+	chatexOpts := chatex.NewTradeOpts() // TODO:
+	exFinder := exproc.NewFinder(chatexCli, ordersCollector, chatexOpts, adminSender)
 	ordersCollector.RegisterCallback(exFinder.OnSnapshot)
 
 	myChatex := chatex.NewChatex(chatexCli, ordersCollector)
