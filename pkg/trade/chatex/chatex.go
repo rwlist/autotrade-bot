@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	chatexsdk "github.com/chatex-com/sdk-go"
 	"github.com/rwlist/autotrade-bot/pkg/money"
 
@@ -48,7 +50,8 @@ func (c *Chatex) BalanceToUSD(bal *trade.Balance) (decimal.Decimal, error) {
 
 	rate, err := c.GetRate(bal.Asset + "usdt")
 	if err != nil {
-		return decimal.Zero, err
+		log.WithError(err).WithField("asset", bal.Asset).Info("rate not found")
+		return decimal.Zero, nil
 	}
 
 	return amount.Mul(rate), nil

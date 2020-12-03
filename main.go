@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	chatexsdk "github.com/chatex-com/sdk-go"
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	chatexsdk "github.com/chatex-com/sdk-go"
 
 	"github.com/rwlist/autotrade-bot/pkg/exproc"
 	"github.com/rwlist/autotrade-bot/pkg/history"
@@ -45,7 +46,7 @@ func main() {
 
 	log.SetFormatter(&log.JSONFormatter{PrettyPrint: cfg.Bot.PrettyPrint})
 
-	go func(){
+	go func() {
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
 		err := http.ListenAndServe(":2112", mux)
@@ -79,8 +80,8 @@ func main() {
 	}
 
 	redisDB := redis.NewClient(&redis.Options{
-		Addr:               cfg.Redis.Addr,
-		Password:           cfg.Redis.Password,
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
 	})
 
 	var binanceCli binance.Client
@@ -93,9 +94,12 @@ func main() {
 
 	tr := trigger.NewTrigger(myBinance)
 
-	chatexCli := chatexsdk.NewClient("https://api.chatex.com/v1", cfg.Chatex.RefreshToken)
+	chatexOpts := chatex.NewTradeOpts(
+		redisdb.NewHash("trade_opts:chatex", redisDB),
+	)
+	chatexCli := chatexsdk.NewClient(cfg.Chatex.URL, cfg.Chatex.RefreshToken)
 	chatexSnapshotList := redisdb.NewList("chatex_order_snapshots", redisDB)
-	ordersCollector := chatex.NewOrdersCollector(chatexCli, chatexSnapshotList)
+	ordersCollector := chatex.NewOrdersCollector(chatexCli, chatexSnapshotList, chatexOpts)
 
 	go func() {
 		err := ordersCollector.CollectInf(context.Background())
@@ -104,7 +108,7 @@ func main() {
 		}
 	}()
 
-	exFinder := exproc.NewFinder(chatexCli, ordersCollector, adminSender)
+	exFinder := exproc.NewFinder(chatexCli, ordersCollector, chatexOpts, adminSender)
 	ordersCollector.RegisterCallback(exFinder.OnSnapshot)
 
 	myChatex := chatex.NewChatex(chatexCli, ordersCollector)
@@ -117,6 +121,7 @@ func main() {
 			Status:       stat.New(myBinance),
 			StatusChatex: stat.New(myChatex),
 			History:      history.New(),
+			ChatexOpts:   chatexOpts,
 		},
 	)
 

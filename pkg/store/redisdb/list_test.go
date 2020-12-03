@@ -6,10 +6,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/rwlist/autotrade-bot/pkg/conf"
 )
 
 type someObject struct {
@@ -18,13 +15,7 @@ type someObject struct {
 }
 
 func TestList_LPush(t *testing.T) {
-	cfg, err := conf.ParseEnv()
-	assert.Nil(t, err)
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Addr,
-		Password: cfg.Redis.Password,
-	})
+	rdb := redisCli(t)
 
 	list := NewList("temp_test", rdb)
 

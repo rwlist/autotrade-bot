@@ -9,7 +9,7 @@ import (
 	"github.com/rwlist/autotrade-bot/pkg/stat"
 )
 
-func (h *Handler) handleCommand(chatID int, cmds []string) {
+func (h *Handler) handleCommand(chatID int, cmds []string) { //nolint:gocyclo
 	if len(cmds) == 0 {
 		return
 	}
@@ -19,6 +19,7 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 	if len(cmds) > 1 {
 		str = cmds[1]
 	}
+
 	switch cmd {
 	case "/alter":
 		h.commandAlter(chatID, str)
@@ -52,6 +53,15 @@ func (h *Handler) handleCommand(chatID int, cmds []string) {
 
 	case "/history":
 		h.commandHistory(chatID)
+
+	case "/opts":
+		h.commandOpts(chatID)
+
+	case "/opt_set":
+		h.commandOptSet(chatID, cmds[1:])
+
+	case "/opt_help":
+		h.commandOptHelp(chatID)
 
 	default:
 		h.commandNotFound(chatID)
@@ -222,7 +232,55 @@ func (h *Handler) commandHelp(chatID int) {
 
 /alter <formula> sets the formula in the trigger to a new without changing of the start point
 /history sends 10 last used formulas
+/opts prints all set options
+/opt_set <key> <value> allows to set option by key and value
+/opt_help get help with std options
 `
 
 	h.sendMessage(chatID, str)
+}
+
+func (h *Handler) commandOpts(chatID int) {
+	res, err := h.svc.ChatexOpts.GetAll()
+	if err != nil {
+		log.WithError(err).Error("failed to read opts")
+		h.sendMessage(chatID, err.Error())
+		return
+	}
+
+	lines := []string{"All opts:", ""}
+	for k, v := range res {
+		lines = append(lines, fmt.Sprintf("%s:  %s", k, v))
+	}
+
+	h.sendMessage(chatID, strings.Join(lines, "\n"))
+}
+
+func (h *Handler) commandOptSet(chatID int, cmd []string) {
+	const args = 2
+	if len(cmd) != args {
+		h.sendMessage(chatID, "Must be exactly 2 arguments. Get /help")
+		return
+	}
+
+	key := cmd[0]
+	value := cmd[1]
+
+	err := h.svc.ChatexOpts.SetOption(key, value)
+	if err != nil {
+		log.WithError(err).Error("failed to set option")
+		h.sendMessage(chatID, err.Error())
+		return
+	}
+
+	h.sendMessage(chatID, fmt.Sprintf("OK! [%s] => %s\n\n/opts", key, value))
+}
+
+func (h *Handler) commandOptHelp(chatID int) {
+	h.sendMessage(chatID, strings.TrimSpace(`
+Here are some common options:
+orders_collector_state -- if "disable" is set, OrdersCollector will skip collectAndSave
+limit.usdt -- contains the maximum available trade amount for usdt
+coins.tbtc.disabled -- if "true", then this coin is ignored
+`))
 }

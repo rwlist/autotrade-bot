@@ -2,6 +2,7 @@ package binance
 
 import (
 	gobinance "github.com/adshao/go-binance"
+
 	"github.com/rwlist/autotrade-bot/pkg/convert"
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 )

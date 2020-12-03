@@ -17,3 +17,11 @@ type OrdersSnapshot struct {
 	Started  time.Time
 	Finished time.Time
 }
+
+func (s OrdersSnapshot) CoinCodes() []string {
+	var coins []string
+	for _, coin := range s.Coins {
+		coins = append(coins, coin.Code)
+	}
+	return coins
+}
