@@ -19,16 +19,18 @@ type OrdersCollector struct {
 	cli  *chatexsdk.Client
 	list *redisdb.List
 	log  logrus.FieldLogger
+	opts *TradeOpts
 
 	callbacks []callback
 	mu        sync.RWMutex
 }
 
-func NewOrdersCollector(cli *chatexsdk.Client, list *redisdb.List) *OrdersCollector {
+func NewOrdersCollector(cli *chatexsdk.Client, list *redisdb.List, opts *TradeOpts) *OrdersCollector {
 	return &OrdersCollector{
 		cli:  cli,
 		list: list,
 		log:  logrus.StandardLogger(),
+		opts: opts,
 	}
 }
 
@@ -132,6 +134,11 @@ func (c *OrdersCollector) CollectInf(ctx context.Context) error {
 }
 
 func (c *OrdersCollector) collectAndSave() {
+	if val, _ := c.opts.GetSingle("orders_collector_state"); val == "disable" {
+		c.log.Info("skipping collectAndSave due to disable config")
+		return
+	}
+
 	snapshot, err := c.CollectAll()
 	if err != nil {
 		c.log.WithError(err).Error("failed to collect all")

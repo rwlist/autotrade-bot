@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/rwlist/autotrade-bot/pkg/history"
+	"github.com/rwlist/autotrade-bot/pkg/trade/chatex"
 
 	"github.com/rwlist/autotrade-bot/pkg/convert"
 
@@ -27,6 +28,7 @@ type Services struct {
 	Status       *stat.Service
 	StatusChatex *stat.Service
 	History      *history.History
+	ChatexOpts   *chatex.TradeOpts
 }
 
 func NewHandler(bot *telegram.Bot, cfg *conf.Struct, svc Services) *Handler {

@@ -38,15 +38,12 @@ func NewFinder(cli *chatexsdk.Client, collector *chatex.OrdersCollector, tradeOp
 	}
 }
 
-func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) {
+func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 	const logAllPaths = false
 
 	log.Info("processing chatex snapshot in finder")
 
-	var coins []string
-	for _, coin := range snap.Coins {
-		coins = append(coins, coin.Code)
-	}
+	coins := snap.CoinCodes()
 
 	g := make(map[string]map[string]decimal.Decimal)
 
@@ -56,7 +53,8 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) {
 
 	for k, v := range snap.Fetched {
 		tmp := strings.Split(k, "/")
-		if len(tmp) != 2 {
+		const args = 2
+		if len(tmp) != args {
 			log.WithField("k", k).Error("failed to parse pair")
 			continue
 		}
@@ -111,7 +109,7 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) {
 				continue
 			}
 
-			places := int32(5)
+			const places = 5
 
 			order1 := snap.Fetched[next+"/"+start].Orders[0]
 			order2 := snap.Fetched[start+"/"+next].Orders[0]
@@ -194,7 +192,6 @@ func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) {
 	// sleep some time to relax rate limits
 	const relaxTime = time.Second / 2
 	time.Sleep(relaxTime)
-
 }
 
 func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {

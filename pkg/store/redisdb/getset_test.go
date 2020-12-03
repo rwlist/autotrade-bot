@@ -7,19 +7,10 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/rwlist/autotrade-bot/pkg/conf"
 )
 
 func TestAbc(t *testing.T) {
-	cfg, err := conf.ParseEnv()
-	assert.Nil(t, err)
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Addr,
-		Password: cfg.Redis.Password,
-	})
+	rdb := redisCli(t)
 
 	ts := time.Now()
 
