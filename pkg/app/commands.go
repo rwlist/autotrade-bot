@@ -279,8 +279,9 @@ func (h *Handler) commandOptSet(chatID int, cmd []string) {
 func (h *Handler) commandOptHelp(chatID int) {
 	h.sendMessage(chatID, strings.TrimSpace(`
 Here are some common options:
-orders_collector_state -- if "disable" is set, OrdersCollector will skip collectAndSave
+chatex.collector.state -- if "disable" is set, OrdersCollector will skip collectAndSave
 limit.usdt -- contains the maximum available trade amount for usdt
 coins.tbtc.disabled -- if "true", then this coin is ignored
+chatex.collector.period -- can set to any duration, like "20s"
 `))
 }

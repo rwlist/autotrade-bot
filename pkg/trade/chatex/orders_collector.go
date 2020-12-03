@@ -148,22 +148,20 @@ func (c *OrdersCollector) CollectAll() (*OrdersSnapshot, error) {
 }
 
 func (c *OrdersCollector) CollectInf(ctx context.Context) error {
-	const every = time.Minute
-
 	for {
 		c.collectAndSave()
 
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(every):
+		case <-time.After(c.opts.FetchCollectorPeriod()):
 			continue
 		}
 	}
 }
 
 func (c *OrdersCollector) collectAndSave() {
-	if val, _ := c.opts.GetSingle("orders_collector_state"); val == "disable" {
+	if val, _ := c.opts.GetSingle("chatex.collector.state"); val == "disable" {
 		c.log.Info("skipping collectAndSave due to disable config")
 		return
 	}
