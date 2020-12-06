@@ -244,6 +244,12 @@ func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) { //nolint:funlen
 		return
 	}
 
+	if order1.Status != chatexsdk.Active || order2.Status != chatexsdk.Active {
+		info = append(info, "Error: one of orders is not active")
+		f.sender.Send(strings.Join(info, "\n"))
+		return
+	}
+
 	if !calc.LastAmount.GreaterThan(calc.StartAmount) {
 		info = append(info, "Error: not positive cycle")
 		f.sender.Send(strings.Join(info, "\n"))
