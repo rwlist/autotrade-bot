@@ -9,6 +9,7 @@ import (
 type FetchedOrders struct {
 	Timestamp time.Time
 	Orders    []chatexsdk.Order
+	Pair      string
 }
 
 type OrdersSnapshot struct {
@@ -16,6 +17,9 @@ type OrdersSnapshot struct {
 	Coins    []chatexsdk.Coin
 	Started  time.Time
 	Finished time.Time
+
+	// single pair only, fetched now
+	IsMomentSnapshot bool
 }
 
 func (s OrdersSnapshot) CoinCodes() []string {

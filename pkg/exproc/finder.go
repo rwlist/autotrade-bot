@@ -161,7 +161,7 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 			info = info + "\n* " + buy1 + "\n* " + buy2
 			results = append(results, info)
 
-			go f.makeTrades(order1, order2)
+			go f.makeTrades(snap, order1, order2)
 		}
 	}
 
@@ -173,7 +173,7 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 	f.sender.Send(strings.Join(results, "\n\n"))
 }
 
-func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) { //nolint:funlen
+func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk.Order) { //nolint:funlen
 	const places = 8
 
 	// trades must not be clashed
@@ -182,16 +182,20 @@ func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) { //nolint:funlen
 
 	logger := log.WithField("order1", order1).WithField("order2", order2)
 
-	err := f.refreshOrder(&order1)
-	if err != nil {
-		logger.WithError(err).Error("failed to refresh order1")
-		return
-	}
+	if snap.IsMomentSnapshot {
+		logger.Info("orders are already verified, skipping refresh")
+	} else {
+		err := f.refreshOrder(&order1)
+		if err != nil {
+			logger.WithError(err).Error("failed to refresh order1")
+			return
+		}
 
-	err = f.refreshOrder(&order2)
-	if err != nil {
-		logger.WithError(err).Error("failed to refresh order2")
-		return
+		err = f.refreshOrder(&order2)
+		if err != nil {
+			logger.WithError(err).Error("failed to refresh order2")
+			return
+		}
 	}
 
 	log.WithField("order1", order1).WithField("order2", order2).Info("updated orders")
@@ -226,7 +230,7 @@ func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) { //nolint:funlen
 			pair1.Sell,
 		),
 		fmt.Sprintf(
-			"order1 = %v, order2 = %v",
+			"order1 = %v, order2 = %v", // TODO: links to chatex
 			order1.ID,
 			order2.ID,
 		),
@@ -311,8 +315,11 @@ func (f *Finder) makeTrades(order1, order2 chatexsdk.Order) { //nolint:funlen
 	)
 
 	f.sender.Send(strings.Join(info, "\n"))
+
+	// TODO: retry on success (with sleep relax)
 }
 
+// TODO: refresh via ListOrders
 func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
 	const relaxTime = time.Second / 2
 

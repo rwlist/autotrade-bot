@@ -66,7 +66,6 @@ func (c *OrdersCollector) Coin(code string) chatexsdk.Coin {
 func (c *OrdersCollector) CollectAll() (*OrdersSnapshot, error) {
 	const (
 		defaultSleep = time.Second / 2
-		sleepOnError = time.Second
 	)
 
 	started := time.Now()
@@ -88,52 +87,36 @@ func (c *OrdersCollector) CollectAll() (*OrdersSnapshot, error) {
 
 	for _, coin1 := range coins {
 		for _, coin2 := range coins {
-			if coin1.Code == coin2.Code {
+			if coin1.Code >= coin2.Code {
 				continue
 			}
 
 			time.Sleep(defaultSleep)
-
-			pair := coin1.Code + "/" + coin2.Code
-
-			const (
-				offset = 0
-				limit  = 50
-			)
-
-			var (
-				now    time.Time
-				orders []chatexsdk.Order
-				err    error
-			)
-
-			for retries := 0; retries < 3; retries++ {
-				now = time.Now()
-				orders, err = c.cli.GetOrders(context.Background(), pair, offset, limit)
-				if err == chatexsdk.ErrTooManyRequests {
-					time.Sleep(sleepOnError)
-					continue
-				}
-				break
-			}
+			fetched1, err := c.FetchOrders(coin1.Code, coin2.Code)
 			if err != nil {
-				c.log.WithError(err).WithField("pair", pair).Error("failed to get orders")
+				c.log.WithError(err).WithField("pair", fetched1.Pair).Error("failed to get orders")
 				return nil, err
 			}
+			result[fetched1.Pair] = fetched1
 
-			timeAfter := time.Now()
+			time.Sleep(defaultSleep)
+			fetched2, err := c.FetchOrders(coin2.Code, coin1.Code)
+			if err != nil {
+				c.log.WithError(err).WithField("pair", fetched2.Pair).Error("failed to get orders")
+				return nil, err
+			}
+			result[fetched2.Pair] = fetched2
 
-			fetched := FetchedOrders{
-				Timestamp: now,
-				Orders:    orders,
+			momentSnapshot := OrdersSnapshot{
+				Fetched: map[string]FetchedOrders{
+					fetched1.Pair: fetched1,
+					fetched2.Pair: fetched2,
+				},
+				Coins:            []chatexsdk.Coin{coin1, coin2},
+				IsMomentSnapshot: true,
 			}
 
-			c.log.WithFields(logrus.Fields{
-				"duration": timeAfter.Sub(now),
-				"fetched":  len(fetched.Orders),
-			}).Info("fetched orders by pair")
-
-			result[pair] = fetched
+			go c.sendCallbacks(momentSnapshot)
 		}
 	}
 
@@ -182,11 +165,15 @@ func (c *OrdersCollector) collectAndSave() {
 
 	metrics.ChatexCollectorOk()
 
+	c.sendCallbacks(*snapshot)
+}
+
+func (c *OrdersCollector) sendCallbacks(snapshot OrdersSnapshot) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	for _, cb := range c.callbacks {
-		cb(*snapshot)
+		cb(snapshot)
 	}
 }
 
