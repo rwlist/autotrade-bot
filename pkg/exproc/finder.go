@@ -183,19 +183,20 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 	logger := log.WithField("order1", order1).WithField("order2", order2)
 
 	if snap.IsMomentSnapshot {
-		logger.Info("orders are already verified, skipping refresh")
-	} else {
-		err := f.refreshOrder(&order1)
-		if err != nil {
-			logger.WithError(err).Error("failed to refresh order1")
-			return
-		}
+		logger.Info("info from moment snapshot")
+		// TODO: invent some way to skip refresh in some cases
+	}
 
-		err = f.refreshOrder(&order2)
-		if err != nil {
-			logger.WithError(err).Error("failed to refresh order2")
-			return
-		}
+	err := f.refreshOrder(&order1)
+	if err != nil {
+		logger.WithError(err).Error("failed to refresh order1")
+		return
+	}
+
+	err = f.refreshOrder(&order2)
+	if err != nil {
+		logger.WithError(err).Error("failed to refresh order2")
+		return
 	}
 
 	log.WithField("order1", order1).WithField("order2", order2).Info("updated orders")
@@ -260,6 +261,8 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 		return
 	}
 
+	// TODO: make satoshi trades to clean up orderbook
+
 	trade1, err := f.makeTrade(order1.ID, chatexsdk.TradeRequest{
 		Amount: calc.NextAmount,
 		Rate:   order1.Rate,
@@ -316,32 +319,29 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 
 	f.sender.Send(strings.Join(info, "\n"))
 
-	// TODO: retry on success (with sleep relax)
+	// successful trade, retrying
+	const retrySleep = time.Second
+	time.Sleep(retrySleep)
+
+	go f.makeTrades(snap, order1, order2)
 }
 
-// TODO: refresh via ListOrders
 func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
-	const relaxTime = time.Second / 2
-
-	var (
-		res *chatexsdk.Order
-		err error
-	)
-
-	for i := 0; i < 3; i++ {
-		res, err = f.cli.GetOrder(context.Background(), uint(ptr.ID))
-		if err == chatexsdk.ErrTooManyRequests {
-			time.Sleep(relaxTime)
-			continue
-		}
-		break
+	codes := strings.Split(ptr.Pair, "/")
+	if len(codes) != 2 { //nolint:gomnd
+		return fmt.Errorf("invalid pair: %s", ptr.Pair)
 	}
 
+	res, err := f.collector.FetchOrders(codes[0], codes[1])
 	if err != nil {
 		return err
 	}
 
-	*ptr = *res
+	if len(res.Orders) == 0 {
+		return fmt.Errorf("pair orderbook is empty, pair=%s", ptr.Pair)
+	}
+
+	*ptr = res.Orders[0]
 	return nil
 }
 

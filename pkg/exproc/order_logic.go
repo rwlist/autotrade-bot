@@ -70,8 +70,8 @@ func (o OrderCalc) CalcTrades(order1, order2 chatexsdk.Order) OrderCalc {
 		MidAmount2:  midAmount2,
 		MidAmount:   midAmount,
 		StartAmount: startAmount,
-		NextAmount:  nextAmount,
-		LastAmount:  lastAmount,
+		NextAmount:  nextAmount, // first trade
+		LastAmount:  lastAmount, // second trade
 	}
 }
 
