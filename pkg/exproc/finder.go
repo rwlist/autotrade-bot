@@ -183,19 +183,20 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 	logger := log.WithField("order1", order1).WithField("order2", order2)
 
 	if snap.IsMomentSnapshot {
-		logger.Info("orders are already verified, skipping refresh")
-	} else {
-		err := f.refreshOrder(&order1)
-		if err != nil {
-			logger.WithError(err).Error("failed to refresh order1")
-			return
-		}
+		logger.Info("info from moment snapshot")
+		// TODO: invent some way to skip refresh in some cases
+	}
 
-		err = f.refreshOrder(&order2)
-		if err != nil {
-			logger.WithError(err).Error("failed to refresh order2")
-			return
-		}
+	err := f.refreshOrder(&order1)
+	if err != nil {
+		logger.WithError(err).Error("failed to refresh order1")
+		return
+	}
+
+	err = f.refreshOrder(&order2)
+	if err != nil {
+		logger.WithError(err).Error("failed to refresh order2")
+		return
 	}
 
 	log.WithField("order1", order1).WithField("order2", order2).Info("updated orders")
