@@ -319,7 +319,11 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 
 	f.sender.Send(strings.Join(info, "\n"))
 
-	// TODO: retry on success (with sleep relax)
+	// successful trade, retrying
+	const retrySleep = time.Second
+	time.Sleep(retrySleep)
+
+	go f.makeTrades(snap, order1, order2)
 }
 
 func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
