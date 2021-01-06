@@ -236,7 +236,7 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 			pair1.Sell,
 		),
 		fmt.Sprintf(
-			"order1 = %v, order2 = %v", // TODO: links to chatex
+			"order1 = %v, order2 = %v",
 			chatex.OrderLinkMd(order1.ID),
 			chatex.OrderLinkMd(order2.ID),
 		),
