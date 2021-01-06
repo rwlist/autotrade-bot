@@ -41,6 +41,11 @@ func NewFinder(cli *chatexsdk.Client, collector *chatex.OrdersCollector, tradeOp
 func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 	const logAllPaths = false
 
+	if !snap.IsMomentSnapshot {
+		log.Info("ignoring non-moment snapshot")
+		return
+	}
+
 	log.Info("processing chatex snapshot in finder")
 
 	coins := snap.CoinCodes()
@@ -236,6 +241,11 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 			order2.ID,
 		),
 		fmt.Sprintf(
+			"amount1 = %v, amount2 = %v",
+			order1.Amount,
+			order2.Amount,
+		),
+		fmt.Sprintf(
 			"startAmount = %v, nextAmount = %v, lastAmount = %v",
 			calc.StartAmount.RoundBank(places),
 			calc.NextAmount.RoundBank(places),
@@ -243,15 +253,21 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 		),
 	)
 
-	if !calc.StartAmount.IsPositive() || !calc.NextAmount.IsPositive() || !calc.LastAmount.IsPositive() {
-		info = append(info, "Error: not positive amount")
+	if order1.Status != chatexsdk.Active || order2.Status != chatexsdk.Active {
+		info = append(info, "Error: one of orders is not active")
 		f.sender.Send(strings.Join(info, "\n"))
 		return
 	}
 
-	if order1.Status != chatexsdk.Active || order2.Status != chatexsdk.Active {
-		info = append(info, "Error: one of orders is not active")
+	if !calc.StartAmount.IsPositive() || !calc.NextAmount.IsPositive() || !calc.LastAmount.IsPositive() {
+		info = append(info, "Error: not positive amount.")
 		f.sender.Send(strings.Join(info, "\n"))
+
+		if f.tryFixNonPositive(order1, order2) {
+			// looks like successful trade, retrying
+			f.retryMakeTrades(snap, order1, order2)
+		}
+
 		return
 	}
 
@@ -260,8 +276,6 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 		f.sender.Send(strings.Join(info, "\n"))
 		return
 	}
-
-	// TODO: make satoshi trades to clean up orderbook
 
 	trade1, err := f.makeTrade(order1.ID, chatexsdk.TradeRequest{
 		Amount: calc.NextAmount,
@@ -273,6 +287,7 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 		f.sender.Send(strings.Join(info, "\n"))
 		return
 	}
+	logger.WithField("trade1", trade1).Info("made trade")
 
 	// trade1 is finished, so myLimit should be decreased
 	myLimit = myLimit.Sub(calc.StartAmount)
@@ -305,6 +320,7 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 		f.sender.Send(strings.Join(info, "\n"))
 		return
 	}
+	logger.WithField("trade2", trade2).Info("made trade")
 
 	info = append(
 		info,
@@ -320,6 +336,10 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 	f.sender.Send(strings.Join(info, "\n"))
 
 	// successful trade, retrying
+	f.retryMakeTrades(snap, order1, order2)
+}
+
+func (f *Finder) retryMakeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk.Order) {
 	const retrySleep = time.Second
 	time.Sleep(retrySleep)
 
