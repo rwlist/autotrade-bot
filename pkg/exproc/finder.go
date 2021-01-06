@@ -140,7 +140,7 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 				next,
 				calc.StartAmount.Round(places),
 				start,
-				order1.ID,
+				chatex.OrderLinkMd(order1.ID),
 			)
 
 			buy2 := fmt.Sprintf(
@@ -149,7 +149,7 @@ func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 				start,
 				calc.NextAmount.Round(places),
 				next,
-				order2.ID,
+				chatex.OrderLinkMd(order2.ID),
 			)
 
 			log.WithFields(log.Fields{
@@ -237,8 +237,8 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 		),
 		fmt.Sprintf(
 			"order1 = %v, order2 = %v", // TODO: links to chatex
-			order1.ID,
-			order2.ID,
+			chatex.OrderLinkMd(order1.ID),
+			chatex.OrderLinkMd(order2.ID),
 		),
 		fmt.Sprintf(
 			"amount1 = %v, amount2 = %v",
