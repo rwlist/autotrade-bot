@@ -40,3 +40,7 @@ func (l *List) Left(obj interface{}) error {
 
 	return json.Unmarshal(b, obj)
 }
+
+func (l *List) LTrim(lo, hi int64) error {
+	return l.cli.LTrim(context.Background(), l.name, lo, hi).Err()
+}
