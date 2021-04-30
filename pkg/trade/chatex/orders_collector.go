@@ -163,6 +163,13 @@ func (c *OrdersCollector) collectAndSave() {
 		return
 	}
 
+	// clean up old records
+	err = c.list.LTrim(0, 1000)
+	if err != nil {
+		c.log.WithError(err).Error("failed to trim snapshot records")
+		// no return
+	}
+
 	metrics.ChatexCollectorOk()
 
 	c.sendCallbacks(*snapshot)
