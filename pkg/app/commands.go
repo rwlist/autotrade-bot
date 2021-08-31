@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rwlist/autotrade-bot/pkg/trade/chatex"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/rwlist/autotrade-bot/pkg/stat"
@@ -62,6 +64,9 @@ func (h *Handler) handleCommand(chatID int, cmds []string) { //nolint:gocyclo
 
 	case "/opt_help":
 		h.commandOptHelp(chatID)
+
+	case "/opt_auto":
+		h.commandOptAuto(chatID, cmds[1:])
 
 	default:
 		h.commandNotFound(chatID)
@@ -235,6 +240,7 @@ func (h *Handler) commandHelp(chatID int) {
 /opts prints all set options
 /opt_set <key> <value> allows to set option by key and value
 /opt_help get help with std options
+/opt_auto set some options by some template
 `
 
 	h.sendMessage(chatID, str)
@@ -284,4 +290,51 @@ limit.usdt -- contains the maximum available trade amount for usdt
 coins.tbtc.disabled -- if "true", then this coin is ignored
 chatex.collector.period -- can set to any duration, like "20s"
 `))
+}
+
+func (h *Handler) commandOptAuto(chatID int, args []string) {
+	const helpMsg = "First argument must be valid type. Examples:\n\t- /opt_auto template_from_rate ref_rate_usd.%s"
+
+	if len(args) < 1 {
+		h.sendMessage(chatID, helpMsg)
+		return
+	}
+
+	templateFromRate := func(tmpl string) {
+		rates, err := h.svc.Chatex.GetAllRates(chatex.USDT)
+		if err != nil {
+			log.WithError(err).Error("failed to get all rates")
+			h.sendMessage(chatID, err.Error())
+			return
+		}
+
+		var info []string
+
+		for _, rate := range rates {
+			key := fmt.Sprintf(tmpl, rate.Currency)
+
+			err := h.svc.ChatexOpts.SetOption(key, rate.Rate.String())
+			if err != nil {
+				info = append(info, "failed to set option: "+err.Error())
+				continue
+			}
+
+			info = append(info, fmt.Sprintf("%s = %s", key, rate.Rate))
+		}
+
+		h.sendMessage(chatID, "All set!\n\n"+strings.Join(info, "\n"))
+	}
+
+	switch args[1] {
+	case "template_from_rate":
+		if len(args) != 2 { //nolint:gomnd
+			h.sendMessage(chatID, helpMsg)
+			return
+		}
+		templateFromRate(args[2])
+
+	default:
+		h.sendMessage(chatID, helpMsg)
+		return
+	}
 }

@@ -29,6 +29,7 @@ type Services struct {
 	StatusChatex *stat.Service
 	History      *history.History
 	ChatexOpts   *chatex.TradeOpts
+	Chatex       *chatex.Chatex
 }
 
 func NewHandler(bot *telegram.Bot, cfg *conf.Struct, svc Services) *Handler {

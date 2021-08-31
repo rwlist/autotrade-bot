@@ -122,6 +122,7 @@ func main() {
 			StatusChatex: stat.New(myChatex),
 			History:      history.New(),
 			ChatexOpts:   chatexOpts,
+			Chatex:       myChatex,
 		},
 	)
 
