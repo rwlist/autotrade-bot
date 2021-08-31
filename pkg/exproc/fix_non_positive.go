@@ -11,7 +11,7 @@ import (
 )
 
 // tryFixNonPositive accepts two active orders, which are
-func (f *Finder) tryFixNonPositive(order1, order2 chatexsdk.Order) bool { //nolint:funlen
+func (f *Finder) tryFixNonPositive(order1, order2 chatexsdk.Order) bool { //nolint:funlen,unused
 	opts, err := f.tradeOpts.GetAll()
 	if err != nil {
 		log.WithError(err).Error("failed to get opts")

@@ -27,6 +27,9 @@ type Finder struct {
 	tradeOpts *chatex.TradeOpts
 
 	tradeMutex sync.Mutex
+
+	minValues      map[string]decimal.Decimal
+	minValuesMutex sync.RWMutex
 }
 
 func NewFinder(cli *chatexsdk.Client, collector *chatex.OrdersCollector, tradeOpts *chatex.TradeOpts, sender Sender) *Finder {
@@ -38,8 +41,88 @@ func NewFinder(cli *chatexsdk.Client, collector *chatex.OrdersCollector, tradeOp
 	}
 }
 
+func (f *Finder) filterOrders(orders []chatexsdk.Order) []chatexsdk.Order {
+	f.minValuesMutex.RLock()
+	minValue := f.minValues
+	f.minValuesMutex.RUnlock()
+
+	if len(orders) == 0 {
+		return orders
+	}
+	pair := pairOf(orders[0])
+	minBuy := minValue[pair.Buy]
+
+	var newOrders []chatexsdk.Order
+	for i := range orders {
+		if orders[i].Amount.LessThan(minBuy) {
+			continue
+		}
+
+		newOrders = append(newOrders, orders[i])
+	}
+
+	return newOrders
+}
+
+func (f *Finder) filterValue(snap chatex.OrdersSnapshot) (chatex.OrdersSnapshot, error) {
+	minValueStr, err := f.tradeOpts.GetSingle("min_usd_value")
+	if err != nil {
+		return chatex.OrdersSnapshot{}, err
+	}
+
+	minValueUSD, err := decimal.NewFromString(minValueStr)
+	if err != nil {
+		return chatex.OrdersSnapshot{}, err
+	}
+
+	// update minValues
+	minValues := map[string]decimal.Decimal{}
+	opts, err := f.tradeOpts.GetAll()
+	if err != nil {
+		return chatex.OrdersSnapshot{}, err
+	}
+
+	for key := range opts {
+		coin := strings.TrimPrefix(key, "ref_rate_usd.")
+		if coin == key {
+			continue
+		}
+
+		const reallySmallRate = 1e-16
+
+		rateUSD := opts.Decimal(key)
+		rateUSD = decimal.Max(rateUSD, decimal.NewFromFloat(reallySmallRate))
+
+		minValues[coin] = minValueUSD.Div(rateUSD)
+	}
+
+	f.minValuesMutex.Lock()
+	f.minValues = minValues
+	f.minValuesMutex.Unlock()
+
+	newOrders := map[string]chatex.FetchedOrders{}
+	for key, value := range snap.Fetched {
+		value.Orders = f.filterOrders(value.Orders)
+		newOrders[key] = value
+	}
+
+	return chatex.OrdersSnapshot{
+		Fetched:          newOrders,
+		Coins:            snap.Coins,
+		Started:          snap.Started,
+		Finished:         snap.Finished,
+		IsMomentSnapshot: snap.IsMomentSnapshot,
+	}, nil
+}
+
 func (f *Finder) OnSnapshot(snap chatex.OrdersSnapshot) { //nolint:funlen
 	const logAllPaths = false
+
+	snap, err := f.filterValue(snap)
+	if err != nil {
+		log.WithError(err).Error("filter failed")
+		return
+	}
 
 	if !snap.IsMomentSnapshot {
 		log.Info("ignoring non-moment snapshot")
@@ -262,12 +345,6 @@ func (f *Finder) makeTrades(snap chatex.OrdersSnapshot, order1, order2 chatexsdk
 	if !calc.StartAmount.IsPositive() || !calc.NextAmount.IsPositive() || !calc.LastAmount.IsPositive() {
 		info = append(info, "Error: not positive amount.")
 		f.sender.Send(strings.Join(info, "\n"))
-
-		if f.tryFixNonPositive(order1, order2) {
-			// looks like successful trade, retrying
-			f.retryMakeTrades(snap, order1, order2)
-		}
-
 		return
 	}
 
@@ -356,6 +433,7 @@ func (f *Finder) refreshOrder(ptr *chatexsdk.Order) error {
 	if err != nil {
 		return err
 	}
+	res.Orders = f.filterOrders(res.Orders)
 
 	if len(res.Orders) == 0 {
 		return fmt.Errorf("pair orderbook is empty, pair=%s", ptr.Pair)
