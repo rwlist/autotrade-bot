@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/rwlist/autotrade-bot/pkg/trade/chatex"
@@ -254,10 +255,13 @@ func (h *Handler) commandOpts(chatID int) {
 		return
 	}
 
-	lines := []string{"All opts:", ""}
+	var lines []string
 	for k, v := range res {
 		lines = append(lines, fmt.Sprintf("%s:  %s", k, v))
 	}
+
+	sort.Strings(lines)
+	lines = append([]string{"All opts:", ""}, lines...)
 
 	h.sendMessage(chatID, strings.Join(lines, "\n"))
 }
