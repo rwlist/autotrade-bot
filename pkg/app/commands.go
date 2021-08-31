@@ -325,13 +325,13 @@ func (h *Handler) commandOptAuto(chatID int, args []string) {
 		h.sendMessage(chatID, "All set!\n\n"+strings.Join(info, "\n"))
 	}
 
-	switch args[1] {
+	switch args[0] {
 	case "template_from_rate":
 		if len(args) != 2 { //nolint:gomnd
 			h.sendMessage(chatID, helpMsg)
 			return
 		}
-		templateFromRate(args[2])
+		templateFromRate(args[1])
 
 	default:
 		h.sendMessage(chatID, helpMsg)
