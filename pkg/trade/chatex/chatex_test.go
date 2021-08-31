@@ -26,3 +26,12 @@ func TestChatex_GetAllRates(t *testing.T) {
 
 	spew.Dump(rates)
 }
+
+func TestChatex_AccountBalance(t *testing.T) {
+	cli := getClient(t)
+	srv := NewChatex(cli, nil)
+	b, err := srv.AccountBalance()
+	assert.NoError(t, err)
+
+	spew.Dump(b)
+}

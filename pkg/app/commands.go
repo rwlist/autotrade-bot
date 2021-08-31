@@ -329,6 +329,32 @@ func (h *Handler) commandOptAuto(chatID int, args []string) {
 		h.sendMessage(chatID, "All set!\n\n"+strings.Join(info, "\n"))
 	}
 
+	templateFromBalance := func(tmpl string) {
+		balances, err := h.svc.Chatex.AccountBalance()
+		if err != nil {
+			log.WithError(err).Error("failed to get all balances")
+			h.sendMessage(chatID, err.Error())
+			return
+		}
+
+		var info []string
+
+		for _, b := range balances {
+			coin := strings.ToLower(b.Asset)
+			key := fmt.Sprintf(tmpl, coin)
+
+			err := h.svc.ChatexOpts.SetOption(key, b.Free.String())
+			if err != nil {
+				info = append(info, "failed to set option: "+err.Error())
+				continue
+			}
+
+			info = append(info, fmt.Sprintf("%s = %s", key, b.Free))
+		}
+
+		h.sendMessage(chatID, "All set!\n\n"+strings.Join(info, "\n"))
+	}
+
 	switch args[0] {
 	case "template_from_rate":
 		if len(args) != 2 { //nolint:gomnd
@@ -336,6 +362,13 @@ func (h *Handler) commandOptAuto(chatID int, args []string) {
 			return
 		}
 		templateFromRate(args[1])
+
+	case "template_from_balance":
+		if len(args) != 2 { //nolint:gomnd
+			h.sendMessage(chatID, helpMsg)
+			return
+		}
+		templateFromBalance(args[1])
 
 	default:
 		h.sendMessage(chatID, helpMsg)
