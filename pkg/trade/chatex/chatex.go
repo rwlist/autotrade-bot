@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,6 +16,8 @@ import (
 	"github.com/rwlist/autotrade-bot/pkg/draw"
 	"github.com/rwlist/autotrade-bot/pkg/trade"
 )
+
+const USDT = "usdt_trc20"
 
 type Chatex struct {
 	cli       *chatexsdk.Client
@@ -44,11 +47,11 @@ func (c *Chatex) AccountSymbolBalance(symbol string) (decimal.Decimal, error) {
 func (c *Chatex) BalanceToUSD(bal *trade.Balance) (decimal.Decimal, error) {
 	amount := decimal.Sum(bal.Free, bal.Locked)
 
-	if strings.EqualFold(bal.Asset, "usdt") {
+	if strings.HasPrefix(bal.Asset, "usdt_") {
 		return amount, nil
 	}
 
-	rate, err := c.GetRate(bal.Asset + "usdt")
+	rate, err := c.GetRate(bal.Asset + USDT)
 	if err != nil {
 		log.WithError(err).WithField("asset", bal.Asset).Info("rate not found")
 		return decimal.Zero, nil
@@ -116,4 +119,48 @@ func (c *Chatex) SetScale(scale string) {
 
 func (c *Chatex) SetSymbol(symbol string) {
 	panic("implement me")
+}
+
+func (c *Chatex) GetAllRates(base string) ([]trade.Rate, error) {
+	coins, err := c.cli.GetCoins(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	const (
+		defaultSleep = time.Second / 2
+	)
+
+	var rates []trade.Rate
+
+	for _, coin := range coins {
+		code := coin.Code
+		if strings.EqualFold(code, base) {
+			continue
+		}
+
+		pair := code + "/" + base
+
+		fetched, err := c.cli.GetOrders(context.Background(), pair, 0, 0)
+		time.Sleep(defaultSleep)
+
+		if err != nil {
+			log.WithError(err).WithField("pair", pair).Error("failed to get orders")
+			return nil, err
+		}
+
+		if len(fetched) == 0 {
+			log.WithField("pair", pair).Warn("no orders with this pair")
+			continue
+		}
+
+		rate := fetched[0].Rate
+		rates = append(rates, trade.Rate{
+			Rate:     rate,
+			Currency: code,
+			Base:     base,
+		})
+	}
+
+	return rates, nil
 }

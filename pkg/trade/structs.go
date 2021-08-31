@@ -24,6 +24,12 @@ type Balance struct {
 	Locked decimal.Decimal `json:"locked"`
 }
 
+type Rate struct {
+	Rate     decimal.Decimal // how much Base in 1 Currency
+	Currency string
+	Base     string
+}
+
 type Opts struct {
 	Symbol string
 	Scale  string

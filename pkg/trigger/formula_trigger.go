@@ -13,38 +13,6 @@ import (
 	"github.com/rwlist/autotrade-bot/pkg/trade/binance"
 )
 
-type Response struct {
-	CurRate     decimal.Decimal
-	FormulaRate decimal.Decimal
-	AbsDif      decimal.Decimal
-	RelDif      decimal.Decimal
-	StartRate   decimal.Decimal
-	AbsProfit   decimal.Decimal
-	RelProfit   decimal.Decimal
-	T           time.Time
-	Err         error
-	Formula     string
-}
-
-func (ft *FormulaTrigger) newResponse(curRate, fRate decimal.Decimal) *Response {
-	absDif := curRate.Sub(fRate)                                   // curRate - fRate
-	relDif := absDif.Shift(convert.UsefulShift).Div(fRate)         // 100.0 * absDif / fRate
-	d := curRate.Sub(ft.formula.Rate())                            // curRate - ft.formula.Rate()
-	relProf := d.Shift(convert.UsefulShift).Div(ft.formula.Rate()) // 100.0 * d / ft.formula.Rate()
-	absProf := d.Mul(ft.haveBTC)                                   // d * ft.haveBTC
-	return &Response{
-		CurRate:     curRate,
-		FormulaRate: fRate,
-		AbsDif:      absDif,
-		RelDif:      relDif,
-		StartRate:   ft.formula.Rate(),
-		AbsProfit:   absProf,
-		RelProfit:   relProf,
-		T:           time.Now(),
-		Formula:     ft.formula.String(),
-	}
-}
-
 type FormulaTrigger struct {
 	active  bool
 	Resp    *Response
@@ -147,4 +115,36 @@ func (ft *FormulaTrigger) Begin(f formula.Formula) {
 
 func (ft *FormulaTrigger) End() {
 	ft.updActive(false)
+}
+
+type Response struct {
+	CurRate     decimal.Decimal
+	FormulaRate decimal.Decimal
+	AbsDif      decimal.Decimal
+	RelDif      decimal.Decimal
+	StartRate   decimal.Decimal
+	AbsProfit   decimal.Decimal
+	RelProfit   decimal.Decimal
+	T           time.Time
+	Err         error
+	Formula     string
+}
+
+func (ft *FormulaTrigger) newResponse(curRate, fRate decimal.Decimal) *Response {
+	absDif := curRate.Sub(fRate)                                   // curRate - fRate
+	relDif := absDif.Shift(convert.UsefulShift).Div(fRate)         // 100.0 * absDif / fRate
+	d := curRate.Sub(ft.formula.Rate())                            // curRate - ft.formula.Rate()
+	relProf := d.Shift(convert.UsefulShift).Div(ft.formula.Rate()) // 100.0 * d / ft.formula.Rate()
+	absProf := d.Mul(ft.haveBTC)                                   // d * ft.haveBTC
+	return &Response{
+		CurRate:     curRate,
+		FormulaRate: fRate,
+		AbsDif:      absDif,
+		RelDif:      relDif,
+		StartRate:   ft.formula.Rate(),
+		AbsProfit:   absProf,
+		RelProfit:   relProf,
+		T:           time.Now(),
+		Formula:     ft.formula.String(),
+	}
 }
