@@ -24,11 +24,13 @@ jobs:
 
     steps:
       - name: Set default tag for master
+        run: echo "Set latest IMAGE_TAG"
         env:
           IMAGE_TAG: latest
 
       - name: Setup docker tag
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: echo "Set IMAGE_TAG from release tag"
         env:
           IMAGE_TAG: ${{ github.event.release.tag_name }}
 
